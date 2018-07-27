@@ -7,7 +7,7 @@ using System;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Threading;
+using System.Threading.Tasks;
 using System.Text;
 using Serilog.Debugging;
 
@@ -45,15 +45,15 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Initialize a connection to Datadog logs-backend.
         /// </summary>
-        private void connect()
+        private async Task ConnectAsync()
         {
             _client = new TcpClient();
-            _client.ConnectAsync(_config.Url, _config.Port).Wait();
+            await _client.ConnectAsync(_config.Url, _config.Port);
             Stream rawStream = _client.GetStream();
             if (_config.UseSSL)
             {
                 SslStream secureStream = new SslStream(rawStream);
-                secureStream.AuthenticateAsClientAsync(_config.Url).Wait();
+                await secureStream.AuthenticateAsClientAsync(_config.Url);
                 _stream = secureStream;
             }
             else
@@ -66,21 +66,21 @@ namespace Serilog.Sinks.Datadog.Logs
         /// Send payload to Datadog logs-backend.
         /// </summary>
         /// <param name="payload">Payload to send.</param>
-        public void write(string payload)
+        public async Task WriteAsync(string payload)
         {
             for (int retry = 0; retry < MaxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(retry, 2), MaxBackoff);
                 if (retry > 0)
-                {                    
-                    Thread.Sleep(backoff * 1000);
+                {
+                    await Task.Delay(backoff * 1000);
                 }
 
                 if (_client == null || _client.Connected == false)
                 {
                     try
                     {
-                        connect();
+                        await ConnectAsync();
                     }
                     catch (Exception e)
                     {
@@ -107,7 +107,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Close the client.
         /// </summary>
-        public void close()
+        public void Close()
         {
             if (_client != null)
             {

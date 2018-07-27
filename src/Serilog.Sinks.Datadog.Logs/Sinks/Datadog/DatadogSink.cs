@@ -8,6 +8,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Threading.Tasks;
 using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
 using Serilog.Formatting.Json;
@@ -59,7 +60,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// Emit a batch of log events to Datadog logs-backend.
         /// </summary>
         /// <param name="events">The events to emit.</param>
-        protected override void EmitBatch(IEnumerable<LogEvent> events)
+        protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
         {
             if (!events.Any())
             {
@@ -76,7 +77,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 payload.Append(MessageDelimiter);
             }
 
-            _client.write(payload.ToString());
+            await _client.WriteAsync(payload.ToString());
         }
 
         /// <summary>
@@ -86,7 +87,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// the object is being disposed from the finalizer.</param>
         protected override void Dispose(bool disposing)
         {
-            _client.close();
+            _client.Close();
             base.Dispose(disposing);
         }
     }
