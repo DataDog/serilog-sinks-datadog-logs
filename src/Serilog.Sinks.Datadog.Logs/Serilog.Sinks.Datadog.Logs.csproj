@@ -4,7 +4,15 @@
     <TargetFrameworks>netstandard2.0;netstandard1.3;net451</TargetFrameworks>
     <AssemblyName>Serilog.Sinks.Datadog.Logs</AssemblyName>
     <PackageId>Serilog.Sinks.Datadog.Logs</PackageId>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <PackageVersion>0.1.0</PackageVersion>
+    <Authors>Datadog</Authors>
+    <Title>Serilog Sink Datadog Logs</Title>
+    <Description>Serilog Sink that sends log events to Datadog https://www.datadoghq.com/</Description>
+    <Copyright>Datadog, Inc. 2018</Copyright>
+    <PackageTags>serilog;logging;datadog;sink</PackageTags>
+    <PackageProjectUrl>https://github.com/DataDog/serilog-sinks-datadog-logs/</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/DataDog/serilog-sinks-datadog-logs/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageIconUrl>http://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
   </PropertyGroup>
 
   <ItemGroup>
