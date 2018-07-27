@@ -1,0 +1,7 @@
+Component,Origin,License,Copyright
+Serilog,http://serilog.net/,Apache-2.0,Copyright 2016 Serilog Contributors
+Serilog.Sinks.PeriodicBatching,http://serilog.net/,Apache-2.0,Copyright 2016 Serilog Contributors
+System.Net.Security,https://dot.net/,,© Microsoft Corporation. All rights reserved.
+System.Net.Sockets,https://dot.net/,,© Microsoft Corporation. All rights reserved.
+System.Threading,https://dot.net/,,© Microsoft Corporation. All rights reserved.
+System.Threading.Thread,https://dot.net/,,© Microsoft Corporation. All rights reserved.
