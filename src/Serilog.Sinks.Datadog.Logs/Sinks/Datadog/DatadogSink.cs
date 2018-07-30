@@ -36,11 +36,6 @@ namespace Serilog.Sinks.Datadog.Logs
         private static readonly JsonFormatter formatter = new JsonFormatter();
 
         /// <summary>
-        /// Shared source used by Datadog logs-backend to normalize logs.
-        /// </summary>
-        private static readonly LogEventProperty Source = new LogEventProperty("ddsource", new ScalarValue("csharp"));
-
-        /// <summary>
         /// The time to wait before emitting a new event batch.
         /// </summary>
         private static readonly TimeSpan Period = TimeSpan.FromSeconds(2);
@@ -72,7 +67,6 @@ namespace Serilog.Sinks.Datadog.Logs
             foreach (var logEvent in events)
             {
                 payload.Append(_apiKey + WhiteSpace);
-                logEvent.AddOrUpdateProperty(Source);
                 formatter.Format(logEvent, writer);
                 payload.Append(MessageDelimiter);
             }
