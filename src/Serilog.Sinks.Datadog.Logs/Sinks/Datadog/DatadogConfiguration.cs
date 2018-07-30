@@ -8,7 +8,7 @@ namespace Serilog.Sinks.Datadog.Logs
     /// <summary>
     /// Configuration used by the DatadogClient to forward log events to a remote backend.
     /// </summary>
-    public struct DatadogConfiguration
+    public class DatadogConfiguration
     {
         /// <summary>
         /// The Datadog logs-backend URL.

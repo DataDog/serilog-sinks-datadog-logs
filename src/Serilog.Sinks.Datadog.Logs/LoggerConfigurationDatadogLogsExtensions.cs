@@ -26,7 +26,7 @@ namespace Serilog
         public static LoggerConfiguration DatadogLogs(
             this LoggerSinkConfiguration loggerConfiguration,
             string apiKey,
-            DatadogConfiguration configuration = new DatadogConfiguration(),
+            DatadogConfiguration configuration = null,
             LogEventLevel logLevel = LevelAlias.Minimum)
         {
             
@@ -39,6 +39,7 @@ namespace Serilog
                 throw new ArgumentNullException(nameof(apiKey));
             }
 
+            configuration = (configuration != null) ? configuration : new DatadogConfiguration();
             return loggerConfiguration.Sink(new DatadogSink(apiKey, configuration), logLevel);
         }
     }
