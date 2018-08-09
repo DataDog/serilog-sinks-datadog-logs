@@ -7,18 +7,19 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using System.Threading.Tasks;
 using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
-using Serilog.Formatting.Json;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogSink : PeriodicBatchingSink
     {
         private readonly string _apiKey;
+        private readonly string _service;
+        private readonly string _tags;
         private readonly DatadogClient _client;
+
 
         /// <summary>
         /// API Key / message-content delimiter.
@@ -31,11 +32,6 @@ namespace Serilog.Sinks.Datadog.Logs
         private const string MessageDelimiter = "\n";
 
         /// <summary>
-        /// Shared JSON formatter.
-        /// </summary>
-        private static readonly JsonFormatter formatter = new JsonFormatter();
-
-        /// <summary>
         /// The time to wait before emitting a new event batch.
         /// </summary>
         private static readonly TimeSpan Period = TimeSpan.FromSeconds(2);
@@ -45,9 +41,11 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int BatchSizeLimit = 100;
 
-        public DatadogSink(string apiKey, DatadogConfiguration config) : base(BatchSizeLimit, Period)
+        public DatadogSink(string apiKey, string service, string[] tags, DatadogConfiguration config) : base(BatchSizeLimit, Period)
         {
             _apiKey = apiKey;
+            _service = service;
+            _tags = tags != null ? string.Join(",", tags) : null;
             _client = new DatadogClient(config);
         }
 
@@ -63,11 +61,11 @@ namespace Serilog.Sinks.Datadog.Logs
             }
 
             var payload = new StringBuilder();
-            var writer = new StringWriter(payload);
             foreach (var logEvent in events)
             {
                 payload.Append(_apiKey + WhiteSpace);
-                formatter.Format(logEvent, writer);
+                var message = new DatadogMessage(logEvent, _service, _tags);
+                payload.Append(message.ToString());
                 payload.Append(MessageDelimiter);
             }
 
