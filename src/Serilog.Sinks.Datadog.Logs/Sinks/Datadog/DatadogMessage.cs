@@ -9,11 +9,6 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogMessage
     {
         /// <summary>
-        /// Datadog Integration name.
-        /// </summary>
-        private const string DDSource = "csharp";
-
-        /// <summary>
         /// Log Event.
         /// </summary>
         [JsonProperty("log_event")]
@@ -39,10 +34,10 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
-        public DatadogMessage(LogEvent logEvent, string service, string tags)
+        public DatadogMessage(LogEvent logEvent, string source, string service, string tags)
         {
             Event = logEvent;
-            Source = DDSource;
+            Source = source;
             Service = service;
             Tags = tags;
         }
