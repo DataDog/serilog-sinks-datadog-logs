@@ -1,3 +1,10 @@
+// Unless explicitly stated otherwise all files in this repository are licensed
+// under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/).
+// Copyright 2018 Datadog, Inc.
+
+using System;
+using System.Collections.Generic;
 using Serilog.Events;
 using Newtonsoft.Json;
 
@@ -9,10 +16,34 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogMessage
     {
         /// <summary>
-        /// Log Event.
+        /// Message content.
         /// </summary>
-        [JsonProperty("log_event")]
-        public LogEvent Event { get; private set; }
+        [JsonProperty("message")]
+        public string Message { get; private set; }
+
+        /// <summary>
+        /// Message timestamp.
+        /// </summary>
+        [JsonProperty("timestamp")]
+        public DateTimeOffset Timestamp { get; private set; }
+
+        /// <summary>
+        /// Message severity level.
+        /// </summary>
+        [JsonProperty("level")]
+        public string Level { get; private set; }
+
+        /// <summary>
+        /// Message exception.
+        /// </summary>
+        [JsonProperty("exception")]
+        public Exception Exception { get; private set; }
+
+        /// <summary>
+        /// Message properties.
+        /// </summary>
+        [JsonProperty("properties")]
+        Dictionary<string, object> Properties { get; }
 
         /// <summary>
         /// Integration name.
@@ -36,16 +67,28 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public DatadogMessage(LogEvent logEvent, string source, string service, string tags)
         {
-            Event = logEvent;
+            Message = logEvent.RenderMessage();
+            Timestamp = logEvent.Timestamp;
+            Level = logEvent.Level.ToString();
+            Exception = logEvent.Exception;
             Source = source;
             Service = service;
             Tags = tags;
+
+            if (logEvent.Properties != null) {
+                Properties = new Dictionary<string, object>();
+                foreach (var key in logEvent.Properties.Keys)
+                {
+                    var value = logEvent.Properties[key];
+                    Properties.Add(key, value.ToString());
+                }
+            }
         }
 
         /// <summary>
         /// Returns the JSON representation of the message.
         /// </summary>
-        public override string ToString()
+        public string ToJSON()
         {
             return JsonConvert.SerializeObject(this, Newtonsoft.Json.Formatting.None, settings);
         }

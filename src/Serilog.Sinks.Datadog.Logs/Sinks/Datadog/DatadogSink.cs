@@ -67,7 +67,7 @@ namespace Serilog.Sinks.Datadog.Logs
             {
                 payload.Append(_apiKey + WhiteSpace);
                 var message = new DatadogMessage(logEvent, _source, _service, _tags);
-                payload.Append(message.ToString());
+                payload.Append(message.ToJSON());
                 payload.Append(MessageDelimiter);
             }
 
