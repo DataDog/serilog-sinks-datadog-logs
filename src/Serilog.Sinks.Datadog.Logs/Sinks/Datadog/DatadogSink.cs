@@ -33,7 +33,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Shared JSON formatter.
         /// </summary>
-        private static readonly JsonFormatter formatter = new JsonFormatter();
+        private static readonly JsonFormatter formatter = new JsonFormatter(renderMessage: true);
 
         /// <summary>
         /// The time to wait before emitting a new event batch.
