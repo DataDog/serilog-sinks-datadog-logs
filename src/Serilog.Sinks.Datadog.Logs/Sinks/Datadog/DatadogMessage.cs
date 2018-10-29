@@ -58,6 +58,12 @@ namespace Serilog.Sinks.Datadog.Logs
         public string Service { get; private set; }
 
         /// <summary>
+        /// Host name.
+        /// </summary>
+        [JsonProperty("host")]
+        public string Host { get; private set; }
+
+        /// <summary>
         /// Custom tags.
         /// </summary>
         [JsonProperty("ddtags")]
@@ -65,7 +71,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
-        public DatadogMessage(LogEvent logEvent, string source, string service, string tags)
+        public DatadogMessage(LogEvent logEvent, string source, string service, string host, string tags)
         {
             Message = logEvent.RenderMessage();
             Timestamp = logEvent.Timestamp;
@@ -73,6 +79,7 @@ namespace Serilog.Sinks.Datadog.Logs
             Exception = logEvent.Exception;
             Source = source;
             Service = service;
+            Host = host;
             Tags = tags;
 
             if (logEvent.Properties != null) {

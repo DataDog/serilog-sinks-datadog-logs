@@ -18,6 +18,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly string _apiKey;
         private readonly string _source;
         private readonly string _service;
+        private readonly string _host;
         private readonly string _tags;
         private readonly DatadogClient _client;
 
@@ -42,11 +43,12 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int BatchSizeLimit = 100;
 
-        public DatadogSink(string apiKey, string source, string service, string[] tags, DatadogConfiguration config) : base(BatchSizeLimit, Period)
+        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config) : base(BatchSizeLimit, Period)
         {
             _apiKey = apiKey;
             _source = source;
             _service = service;
+            _host = host;
             _tags = tags != null ? string.Join(",", tags) : null;
             _client = new DatadogClient(config);
         }
@@ -66,7 +68,7 @@ namespace Serilog.Sinks.Datadog.Logs
             foreach (var logEvent in events)
             {
                 payload.Append(_apiKey + WhiteSpace);
-                var message = new DatadogMessage(logEvent, _source, _service, _tags);
+                var message = new DatadogMessage(logEvent, _source, _service, _host, _tags);
                 payload.Append(message.ToJSON());
                 payload.Append(MessageDelimiter);
             }

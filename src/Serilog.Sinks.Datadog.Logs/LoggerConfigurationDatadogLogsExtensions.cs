@@ -22,6 +22,7 @@ namespace Serilog
         /// <param name="apiKey">Your Datadog API key.</param>
         /// <param name="source">The integration name.</param>
         /// <param name="service">The service name.</param>
+        /// <param name="host">The host name.</param>
         /// <param name="tags">Custom tags.</param>
         /// <param name="configuration">The Datadog logs client configuration.</param>
         /// <returns>Logger configuration</returns>
@@ -31,11 +32,11 @@ namespace Serilog
             string apiKey,
             string source = null,
             string service = null,
+            string host = null,
             string[] tags = null,
             DatadogConfiguration configuration = null,
             LogEventLevel logLevel = LevelAlias.Minimum)
         {
-            
             if (loggerConfiguration == null)
             {
                 throw new ArgumentNullException(nameof(loggerConfiguration));
@@ -46,7 +47,7 @@ namespace Serilog
             }
 
             configuration = (configuration != null) ? configuration : new DatadogConfiguration();
-            return loggerConfiguration.Sink(new DatadogSink(apiKey, source, service, tags, configuration), logLevel);
+            return loggerConfiguration.Sink(new DatadogSink(apiKey, source, service, host, tags, configuration), logLevel);
         }
     }
 }
