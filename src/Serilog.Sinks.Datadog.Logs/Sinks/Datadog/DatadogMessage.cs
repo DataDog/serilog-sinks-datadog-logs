@@ -86,7 +86,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 Properties = new Dictionary<string, object>();
                 foreach (var key in logEvent.Properties.Keys)
                 {
-                    var value = logEvent.Properties[key];
+                    var value = JsonConvert.DeserializeObject(logEvent.Properties[key].ToString());
                     Properties.Add(key, value);
                 }
             }
