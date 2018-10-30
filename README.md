@@ -11,8 +11,9 @@ var log = new LoggerConfiguration()
     .CreateLogger();
 ```
 
-You can override the default behavior by manually specifing the following properties (endpoint, port, useSSL). You can also add
-the following properties (source, service, host, tags) to the Serilog sink.
+You can override the default behavior by manually specifing the following properties (endpoint, port, useSSL).
+
+You can also add the following properties (source, service, host, tags) to the Serilog sink.
 
 ```csharp
 var config = new DatadogConfiguration("intake.logs.datadoghq.com", 10516, true);
@@ -22,7 +23,7 @@ var log = new LoggerConfiguration()
         source: "<SOURCE_NAME>",
         service: "<SERVICE_NAME>",
         host: "<HOST_NAME>",
-        tags: new string[] {"<TAG_1:VALUE_1", "TAG_2:VALUE_2>"},
+        tags: new string[] {"<TAG_1>:<VALUE_1>", "<TAG_2>:<VALUE_2>"},
         configuration: config
     )
     .CreateLogger();

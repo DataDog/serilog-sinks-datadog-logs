@@ -87,7 +87,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 foreach (var key in logEvent.Properties.Keys)
                 {
                     var value = logEvent.Properties[key];
-                    Properties.Add(key, value.ToString());
+                    Properties.Add(key, value);
                 }
             }
         }
