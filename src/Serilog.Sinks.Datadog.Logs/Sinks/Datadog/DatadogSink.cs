@@ -65,6 +65,9 @@ namespace Serilog.Sinks.Datadog.Logs
             _client = new DatadogClient(config);
         }
 
+        /// <summary>
+        /// formatMessage enrich the log event with DataDog metadata such as source, service, host and tags.
+        /// </summary>
         private string formatMessage(LogEvent logEvent, string source, string service, string host, string tags) {
             var payload = new StringBuilder();
             var writer = new StringWriter(payload);
@@ -75,12 +78,13 @@ namespace Serilog.Sinks.Datadog.Logs
 
             // Convert the JSON to a dictionnary and add the DataDog properties
             var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(payload.ToString());
-            logEventAsDict.Add("ddsource", source);
-            logEventAsDict.Add("service", service);
-            logEventAsDict.Add("host", host);
-            logEventAsDict.Add("ddtags", tags);
+            if ( source != null) { logEventAsDict.Add("ddsource", source); }
+            if ( service != null) { logEventAsDict.Add("service", service); }
+            if ( host != null) { logEventAsDict.Add("host", host); }
+            if ( tags != null) { logEventAsDict.Add("ddtags", tags); }
 
-            // Convert back the dict to a JSON
+
+            // Convert back the dict to a JSON string
             return JsonConvert.SerializeObject(logEventAsDict, Newtonsoft.Json.Formatting.None, settings);
         }
 
