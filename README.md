@@ -13,10 +13,19 @@ var log = new LoggerConfiguration()
 
 You can override the default behavior by manually specifing the following properties (endpoint, port, useSSL).
 
-```
+You can also add the following properties (source, service, host, tags) to the Serilog sink.
+
+```csharp
 var config = new DatadogConfiguration("intake.logs.datadoghq.com", 10516, true);
 var log = new LoggerConfiguration()
-    .WriteTo.DatadogLogs("<API_KEY>", config)
+    .WriteTo.DatadogLogs(
+        "<API_KEY>",
+        source: "<SOURCE_NAME>",
+        service: "<SERVICE_NAME>",
+        host: "<HOST_NAME>",
+        tags: new string[] {"<TAG_1>:<VALUE_1>", "<TAG_2>:<VALUE_2>"},
+        configuration: config
+    )
     .CreateLogger();
 ```
 
@@ -24,7 +33,7 @@ var log = new LoggerConfiguration()
 
 Sending the following log:
 
-```
+```csharp
 var log = new LoggerConfiguration()
     .WriteTo.DatadogLogs("<API_KEY>")
     .CreateLogger();
@@ -38,7 +47,7 @@ log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedM
 
 In the platform, the log looks like as the following JSON Object:
 
-```
+```json
 {
     "MessageTemplate": "Processed {@Position} in {Elapsed:000} ms.",
     "Level": "Information",

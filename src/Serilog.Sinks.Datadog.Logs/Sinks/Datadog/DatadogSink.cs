@@ -5,19 +5,24 @@
 
 using System;
 using System.Text;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using System.Threading.Tasks;
 using Serilog.Events;
-using Serilog.Sinks.PeriodicBatching;
 using Serilog.Formatting.Json;
+using Serilog.Sinks.PeriodicBatching;
+using Newtonsoft.Json;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogSink : PeriodicBatchingSink
     {
         private readonly string _apiKey;
+        private readonly string _source;
+        private readonly string _service;
+        private readonly string _host;
+        private readonly string _tags;
         private readonly DatadogClient _client;
 
         /// <summary>
@@ -41,14 +46,46 @@ namespace Serilog.Sinks.Datadog.Logs
         private static readonly TimeSpan Period = TimeSpan.FromSeconds(2);
 
         /// <summary>
+        /// Settings to drop null values.
+        /// </summary>
+        private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+
+        /// <summary>
         /// The maximum number of events to emit in a single batch.
         /// </summary>
         private const int BatchSizeLimit = 100;
 
-        public DatadogSink(string apiKey, DatadogConfiguration config) : base(BatchSizeLimit, Period)
+        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config) : base(BatchSizeLimit, Period)
         {
             _apiKey = apiKey;
+            _source = source;
+            _service = service;
+            _host = host;
+            _tags = tags != null ? string.Join(",", tags) : null;
             _client = new DatadogClient(config);
+        }
+
+        /// <summary>
+        /// formatMessage enrich the log event with DataDog metadata such as source, service, host and tags.
+        /// </summary>
+        private string formatMessage(LogEvent logEvent, string source, string service, string host, string tags) {
+            var payload = new StringBuilder();
+            var writer = new StringWriter(payload);
+
+            // Serialize the event as JSON. The Serilog formatter handles the
+            // internal structure of the logEvent to give a nicely formatted JSON
+            formatter.Format(logEvent, writer);
+
+            // Convert the JSON to a dictionnary and add the DataDog properties
+            var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(payload.ToString());
+            if ( source != null) { logEventAsDict.Add("ddsource", source); }
+            if ( service != null) { logEventAsDict.Add("service", service); }
+            if ( host != null) { logEventAsDict.Add("host", host); }
+            if ( tags != null) { logEventAsDict.Add("ddtags", tags); }
+
+
+            // Convert back the dict to a JSON string
+            return JsonConvert.SerializeObject(logEventAsDict, Newtonsoft.Json.Formatting.None, settings);
         }
 
         /// <summary>
@@ -63,11 +100,10 @@ namespace Serilog.Sinks.Datadog.Logs
             }
 
             var payload = new StringBuilder();
-            var writer = new StringWriter(payload);
             foreach (var logEvent in events)
             {
                 payload.Append(_apiKey + WhiteSpace);
-                formatter.Format(logEvent, writer);
+                payload.Append(formatMessage(logEvent, _source, _service, _host, _tags));
                 payload.Append(MessageDelimiter);
             }
 
