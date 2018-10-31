@@ -83,9 +83,26 @@ namespace Serilog.Sinks.Datadog.Logs
             if ( host != null) { logEventAsDict.Add("host", host); }
             if ( tags != null) { logEventAsDict.Add("ddtags", tags); }
 
+            // Rekey RenderedMessage to message to have it nicely formatted in DataDog Log Explorer
+            renameKey(logEventAsDict, "RenderedMessage", "message");
 
             // Convert back the dict to a JSON string
             return JsonConvert.SerializeObject(logEventAsDict, Newtonsoft.Json.Formatting.None, settings);
+        }
+
+        /// <summary>
+        /// renameKey renames a key in a dictionary.
+        /// </summary>
+        private void renameKey<TKey, TValue>(IDictionary<TKey, TValue> dict,
+                                           TKey oldKey, TKey newKey)
+        {
+            TValue value;
+            if (!dict.TryGetValue(oldKey, out value))
+                return;
+
+            dict.Remove(oldKey);
+            dict.Add(newKey, value);
+            return;
         }
 
         /// <summary>
