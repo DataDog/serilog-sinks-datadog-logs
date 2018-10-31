@@ -5,11 +5,14 @@
 
 using System;
 using System.Text;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Serilog.Events;
+using Serilog.Formatting.Json;
 using Serilog.Sinks.PeriodicBatching;
+using Newtonsoft.Json;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -22,7 +25,6 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly string _tags;
         private readonly DatadogClient _client;
 
-
         /// <summary>
         /// API Key / message-content delimiter.
         /// </summary>
@@ -34,9 +36,19 @@ namespace Serilog.Sinks.Datadog.Logs
         private const string MessageDelimiter = "\n";
 
         /// <summary>
+        /// Shared JSON formatter.
+        /// </summary>
+        private static readonly JsonFormatter formatter = new JsonFormatter();
+
+        /// <summary>
         /// The time to wait before emitting a new event batch.
         /// </summary>
         private static readonly TimeSpan Period = TimeSpan.FromSeconds(2);
+
+        /// <summary>
+        /// Settings to drop null values.
+        /// </summary>
+        private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
         /// <summary>
         /// The maximum number of events to emit in a single batch.
@@ -51,6 +63,25 @@ namespace Serilog.Sinks.Datadog.Logs
             _host = host;
             _tags = tags != null ? string.Join(",", tags) : null;
             _client = new DatadogClient(config);
+        }
+
+        private string formatMessage(LogEvent logEvent, string source, string service, string host, string tags) {
+            var payload = new StringBuilder();
+            var writer = new StringWriter(payload);
+
+            // Serialize the event as JSON. The Serilog formatter handles the
+            // internal structure of the logEvent to give a nicely formatted JSON
+            formatter.Format(logEvent, writer);
+
+            // Convert the JSON to a dictionnary and add the DataDog properties
+            var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(payload.ToString());
+            logEventAsDict.Add("ddsource", source);
+            logEventAsDict.Add("service", service);
+            logEventAsDict.Add("host", host);
+            logEventAsDict.Add("ddtags", tags);
+
+            // Convert back the dict to a JSON
+            return JsonConvert.SerializeObject(logEventAsDict, Newtonsoft.Json.Formatting.None, settings);
         }
 
         /// <summary>
@@ -68,8 +99,7 @@ namespace Serilog.Sinks.Datadog.Logs
             foreach (var logEvent in events)
             {
                 payload.Append(_apiKey + WhiteSpace);
-                var message = new DatadogMessage(logEvent, _source, _service, _host, _tags);
-                payload.Append(message.ToJSON());
+                payload.Append(formatMessage(logEvent, _source, _service, _host, _tags));
                 payload.Append(MessageDelimiter);
             }
 
