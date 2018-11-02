@@ -67,3 +67,17 @@ In the platform, the log looks like as the following JSON Object:
     }
 }
 ```
+
+## How to build the NuGet package
+
+Bump the version in `src/Serilog.Sinks.Datadog.Logs.csproj` and merge your branch
+
+Run these commands in the project root folder
+
+```bash
+git checkout master && git pull
+msbuild Serilog.Sinks.Datadog.Logs.sln /t:restore /p:Configuration=Release
+msbuild Serilog.Sinks.Datadog.Logs.sln /t:pack /p:Configuration=Release
+```
+
+You can find the `.nupkg` file at `bin/Release/Serilog.Sinks.Datadog.Logs.<version>.nupkg`
