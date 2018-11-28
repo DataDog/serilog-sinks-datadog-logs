@@ -26,7 +26,7 @@ namespace Serilog
         /// <param name="host">The host name.</param>
         /// <param name="tags">Custom tags.</param>
         /// <param name="configuration">The Datadog logs client configuration.</param>
-        /// <param name="columnOptionsSection">A config section defining the datadog configuration.</param>
+        /// <param name="configurationSection">A config section defining the datadog configuration.</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
