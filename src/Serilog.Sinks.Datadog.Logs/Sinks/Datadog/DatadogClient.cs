@@ -98,6 +98,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
                 catch (Exception e)
                 {
+                    _stream.Close();
                     SelfLog.WriteLine("Could not send data to Datadog: {0}", e);
                 }
             }
