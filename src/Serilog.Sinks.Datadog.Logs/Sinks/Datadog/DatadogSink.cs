@@ -26,6 +26,11 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly DatadogClient _client;
 
         /// <summary>
+        /// Default source value for the serilog integration.
+        /// </summary>
+        private const string CSHARP = "csharp";
+
+        /// <summary>
         /// API Key / message-content delimiter.
         /// </summary>
         private const string WhiteSpace = " ";
@@ -58,7 +63,7 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config) : base(BatchSizeLimit, Period)
         {
             _apiKey = apiKey;
-            _source = source;
+            _source = source != null ? source : CSHARP;
             _service = service;
             _host = host;
             _tags = tags != null ? string.Join(",", tags) : null;
@@ -83,8 +88,10 @@ namespace Serilog.Sinks.Datadog.Logs
             if ( host != null) { logEventAsDict.Add("host", host); }
             if ( tags != null) { logEventAsDict.Add("ddtags", tags); }
 
-            // Rename key RenderedMessage to message to have it nicely displayed in DataDog Log Explorer
+            // Rename serilog attributes to Datadog reserved attributes to have them properly
+            // displayed on the Log Explorer
             renameKey(logEventAsDict, "RenderedMessage", "message");
+            renameKey(logEventAsDict, "Level", "level");
 
             // Convert back the dict to a JSON string
             return JsonConvert.SerializeObject(logEventAsDict, Newtonsoft.Json.Formatting.None, settings);
