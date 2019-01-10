@@ -64,13 +64,14 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private void CloseConnection()
         {
-            _stream.Close();
-            _stream = null;
 #if NETSTANDARD1_3
             _client.Dispose();
+            _stream.Dispose();
 #else
             _client.Close();
+            _stream.Close();
 #endif
+            _stream = null;
             _client = null;
         }
 
