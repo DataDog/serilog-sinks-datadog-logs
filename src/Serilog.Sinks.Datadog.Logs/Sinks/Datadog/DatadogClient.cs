@@ -62,6 +62,23 @@ namespace Serilog.Sinks.Datadog.Logs
             }
         }
 
+        private void CloseConnection()
+        {
+            _stream.Close();
+            _stream = null;
+#if NETSTANDARD1_3
+            _client.Dispose();
+#else
+            _client.Close();
+#endif
+            _client = null;
+        }
+
+        private bool IsConnectionClosed()
+        {
+            return _client == null || _stream == null;
+        }
+
         /// <summary>
         /// Send payload to Datadog logs-backend.
         /// </summary>
@@ -76,7 +93,7 @@ namespace Serilog.Sinks.Datadog.Logs
                     await Task.Delay(backoff * 1000);
                 }
 
-                if (_client == null || _client.Connected == false)
+                if (IsConnectionClosed())
                 {
                     try
                     {
@@ -98,6 +115,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
                 catch (Exception e)
                 {
+                    CloseConnection();
                     SelfLog.WriteLine("Could not send data to Datadog: {0}", e);
                 }
             }
@@ -109,22 +127,17 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public void Close()
         {
-            if (_client != null)
+            if (!IsConnectionClosed())
             {
                 try
                 {
                     _stream.Flush();
-#if NETSTANDARD1_3
-                    _client.Dispose();
-#else
-                    _client.Close();
-#endif
-                    _client = null;
                 }
                 catch (Exception e)
                 {
-                    SelfLog.WriteLine("Could not close the client: {0}", e);
+                    SelfLog.WriteLine("Could not flush the remaining data: {0}", e);
                 }
+                CloseConnection();
             }
         }
     }
