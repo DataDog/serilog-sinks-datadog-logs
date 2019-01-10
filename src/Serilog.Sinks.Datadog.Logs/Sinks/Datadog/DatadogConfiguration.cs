@@ -40,7 +40,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public bool UseSSL { get; private set; }
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL =  true)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true)
         {
             Url = url;
             Port = port;
