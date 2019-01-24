@@ -5,6 +5,8 @@
 
 using System;
 using System.IO;
+using System.Linq;
+using System.Net.NetworkInformation;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -111,7 +113,13 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     SelfLog.WriteLine("Sending payload to Datadog: {0}", payload);
                     byte[] data = UTF8.GetBytes(payload);
-                    _stream.Write(data, 0, data.Length);
+                    await _stream.WriteAsync(data, 0, data.Length);
+
+                    if (GetState(_client) != TcpState.Established)
+                    {
+                        throw new SocketException(Convert.ToInt32(SocketError.NotConnected));
+                    }
+
                     return;
                 }
                 catch (Exception e)
@@ -140,6 +148,20 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
                 CloseConnection();
             }
+        }
+
+        /// <summary>
+        /// Check the state of the TCP connection to ensure it hasn't been disconnected on the remote side
+        /// </summary>
+        /// <param name="tcpClient"></param>
+        /// <returns></returns>
+        private TcpState GetState(TcpClient tcpClient)
+        {
+            var tcpConnectionInfo = IPGlobalProperties.GetIPGlobalProperties()
+                .GetActiveTcpConnections()
+                .FirstOrDefault(x => x.LocalEndPoint.Equals(tcpClient.Client.LocalEndPoint) && x.RemoteEndPoint.Equals(tcpClient.Client.RemoteEndPoint));
+
+            return tcpConnectionInfo?.State ?? TcpState.Unknown;
         }
     }
 }
