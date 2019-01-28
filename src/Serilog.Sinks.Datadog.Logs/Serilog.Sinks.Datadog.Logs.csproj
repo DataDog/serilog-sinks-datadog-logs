@@ -13,6 +13,8 @@
     <PackageProjectUrl>https://github.com/DataDog/serilog-sinks-datadog-logs/</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/DataDog/serilog-sinks-datadog-logs/blob/master/LICENSE</PackageLicenseUrl>
     <PackageIconUrl>http://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\..\Serilog.Sinks.Datadog.Logs.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
   <ItemGroup>
