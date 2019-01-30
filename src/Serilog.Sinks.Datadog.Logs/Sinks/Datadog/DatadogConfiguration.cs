@@ -28,19 +28,22 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// URL of the server to send log events to.
         /// </summary>
-        public string Url { get; private set; }
+        public string Url { get; set; }
 
         /// <summary>
         /// Port of the server to send log events to.
         /// </summary>
-        public int Port { get; private set;  }
+        public int Port { get; set;  }
 
         /// <summary>
         /// Use SSL or plain text.
         /// </summary>
-        public bool UseSSL { get; private set; }
+        public bool UseSSL { get; set; }
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true)
+        public DatadogConfiguration() : this(DDUrl, DDPort, true) {
+        }
+
+        public DatadogConfiguration(string url, int port, bool useSSL)
         {
             Url = url;
             Port = port;
