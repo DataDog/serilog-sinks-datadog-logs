@@ -80,4 +80,4 @@ msbuild Serilog.Sinks.Datadog.Logs.sln /t:restore /p:Configuration=Release
 msbuild Serilog.Sinks.Datadog.Logs.sln /t:pack /p:Configuration=Release
 ```
 
-You can find the `.nupkg` file at `bin/Release/Serilog.Sinks.Datadog.Logs.<version>.nupkg`
+You can find the `.nupkg` file at `src/Serilog.Sinks.Datadog.Logs/bin/Release/Serilog.Sinks.Datadog.Logs.<version>.nupkg`
