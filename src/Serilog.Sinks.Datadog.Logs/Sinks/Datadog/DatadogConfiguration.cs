@@ -43,7 +43,7 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogConfiguration() : this(DDUrl, DDPort, true) {
         }
 
-        public DatadogConfiguration(string url, int port, bool useSSL)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true)
         {
             Url = url;
             Port = port;
