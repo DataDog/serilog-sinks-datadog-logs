@@ -48,12 +48,12 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {
         }
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool UseHTTP = false)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useHTTP = false)
         {
             Url = url;
             Port = port;
             UseSSL = useSSL;
-            UseHTTP = UseHTTP;
+            UseHTTP = useHTTP;
         }
     }
 }

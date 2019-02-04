@@ -4,9 +4,6 @@
 // Copyright 2019 Datadog, Inc.
 
 using System;
-using System.IO;
-using System.Net.Security;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Text;
 using Serilog.Debugging;
@@ -53,42 +50,46 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public async Task WriteAsync(IEnumerable<LogEvent> events)
         {
-            Encoding utf8 = Encoding.UTF8;
+            var chunks = SerializeEvents(events);
+            var tasks = chunks.Select(Post);
 
-            List<string> bulks = new List<string>();
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+
+        private List<String> SerializeEvents(IEnumerable<LogEvent> events)
+        {
+            List<string> chunks = new List<string>();
 
             int currentSize = 0;
-            var payload = new StringBuilder();
-            payload.Append("[");
-            var joinHelper = new List<string>(events.Count());
+
+            var chunkBuffer = new List<string>(events.Count());
             foreach (var logEvent in events)
             {
                 var formattedLog = _formatter.formatMessage(logEvent);
-                var logSize = utf8.GetByteCount(formattedLog);
+                var logSize = Encoding.UTF8.GetByteCount(formattedLog);
                 if (logSize > _maxMessageSize)
                 {
                     continue;  // The log is dropped because the backend would not accept it
                 }
                 if (currentSize + logSize > _maxSize)
                 {
-                    // Flush the payload to bulks and reset everything
-                    payload.Append(String.Join(",", joinHelper.ToArray()));
-                    payload.Append("]");
-                    bulks.Add(payload.ToString());
-                    payload.Clear();
-                    joinHelper = new List<string>(events.Count());
+                    // Flush the chunkBuffer to the chunks and reset the chunkBuffer
+                    chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]"));
+                    chunkBuffer = new List<string>(events.Count());
                     currentSize = 0;
-                    payload.Append("[");
                 }
-                joinHelper.Add(formattedLog);
+                chunkBuffer.Add(formattedLog);
                 currentSize += logSize;
             }
-            payload.Append(String.Join(",", joinHelper.ToArray()));
-            payload.Append("]");
-            bulks.Add(payload.ToString());
-            var tasks = bulks.Select(Post);
+            chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]"));
 
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            return chunks;
+
+        }
+
+        private static string GenerateChunk(IEnumerable<string> collection, string delimiter, string prefix, string suffix)
+        {
+            return prefix + String.Join(delimiter, collection) + suffix;
         }
 
         private async Task Post(string payload)
@@ -107,8 +108,10 @@ namespace Serilog.Sinks.Datadog.Logs
                     SelfLog.WriteLine("Sending payload to Datadog: {0}", payload);
                     var result = await _client.PostAsync(_url, content);
                     SelfLog.WriteLine("Statuscode: {0}", result.StatusCode);
-                    if (result.StatusCode >= 500) { continue; }
-                    if (result.IsSuccessStatusCode || result.StatusCode >= 400) { return; }
+                    if (result == null) { continue; }
+                    if ((int)result.StatusCode >= 500) { continue; }
+                    if ((int)result.StatusCode >= 400) { break; }
+                    if (result.IsSuccessStatusCode) { return; }
                 }
                 catch (Exception)
                 {

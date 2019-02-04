@@ -114,7 +114,6 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     SelfLog.WriteLine("Sending payload to Datadog: {0}", payload);
                     byte[] data = UTF8.GetBytes(payload);
-                    // TODO: Should this be await _stream.WriteAsync ? 
                     _stream.Write(data, 0, data.Length);
                     return;
                 }

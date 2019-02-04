@@ -24,6 +24,7 @@
     <Compile Remove="Configuration\Extensions\Microsoft.Extensions.Configuration\**\*.*" />
     <Compile Remove="Configuration\Extensions\System.Configuration\**\*.*" />
     <Compile Remove="Configuration\Implementations\Microsoft.Extensions.Configuration\**\*.*" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
