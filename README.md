@@ -68,6 +68,41 @@ In the platform, the log looks like as the following JSON Object:
 }
 ```
 
+## Configuration from `appsettings.json`
+
+Since 0.2.0, you can configure the Datadog sink by using an `appsettings.json` file with
+the [Serilog.Setting.Configuration](https://github.com/serilog/serilog-settings-configuration) package.
+
+In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is shown below:
+
+```json
+"Serilog": {
+  "Using": [ "Serilog.Sinks.Console", "Serilog.Sinks.Datadog.Logs" ],
+  "MinimumLevel": "Debug",
+  "WriteTo": [
+    { "Name": "Console" },
+    {
+      "Name": "DatadogLogs",
+      "Args": {
+        "apiKey": "<API_KEY>",
+        "source": "<SOURCE_NAME>",
+        "host": "<HOST_NAME>",
+        "tags": ["<TAG_1>:<VALUE_1>", "<TAG_2>:<VALUE_2>"],
+        "configurationSection": {
+          "url": "intake.logs.datadoghq.com",
+          "port": 10516,
+          "useSSL": true
+        }
+      }
+    }
+  ],
+  "Enrich": [ "FromLogContext", "WithMachineName", "WithThreadId" ],
+  "Properties": {
+    "Application": "Sample"
+  }
+}
+```
+
 ## How to build the NuGet package
 
 Bump the version in `src/Serilog.Sinks.Datadog.Logs.csproj` and merge your branch
