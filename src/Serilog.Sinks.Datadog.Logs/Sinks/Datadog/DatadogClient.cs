@@ -112,6 +112,11 @@ namespace Serilog.Sinks.Datadog.Logs
                     SelfLog.WriteLine("Sending payload to Datadog: {0}", payload);
                     byte[] data = UTF8.GetBytes(payload);
                     _stream.Write(data, 0, data.Length);
+                    if (!_client.Connected) {
+                        SelfLog.WriteLine("Could not send data to Datadog: connection is closed");
+                        CloseConnection();
+                        continue;
+                    }
                     return;
                 }
                 catch (Exception e)
