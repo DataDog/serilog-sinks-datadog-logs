@@ -5,6 +5,8 @@ A Serilog sink that send events and logs staight away to Datadog. By default the
 **Package** - [Serilog.Sinks.Datadog.Logs](http://nuget.org/packages/serilog.sinks.datadog.logs)
 | **Platforms** - .NET 4.5.1, netstandard1.3, netstandard2.0
 
+Note: For other .NET versions, ensure that the default TLS version used is `1.2`
+
 ```csharp
 var log = new LoggerConfiguration()
     .WriteTo.DatadogLogs("<API_KEY>")
