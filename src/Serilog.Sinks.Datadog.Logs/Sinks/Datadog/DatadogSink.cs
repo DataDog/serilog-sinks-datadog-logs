@@ -4,8 +4,6 @@
 // Copyright 2019 Datadog, Inc.
 
 using System;
-using System.Text;
-using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,13 +40,13 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config) : base(BatchSizeLimit, Period)
         {
-            if (config.UseHTTP)
+            if (config.UseTCP)
             {
-                _client = new DatadogHttpClient(config, new LogFormatter(source, service, host, tags), apiKey);
+                _client = new DatadogTcpClient(config, new LogFormatter(source, service, host, tags), apiKey);
             }
             else
             {
-                _client = new DatadogTcpClient(config, new LogFormatter(source, service, host, tags), apiKey);
+                _client = new DatadogHttpClient(config, new LogFormatter(source, service, host, tags), apiKey);
             }
         }
 

@@ -16,19 +16,19 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogHttpClient : IDatadogClient
     {
-        private readonly DatadogConfiguration _config;
-        private readonly string _url;
         private const string _content = "application/json";
-        private readonly LogFormatter _formatter;
-        private HttpClient _client;
-        private readonly Encoding utf8 = Encoding.UTF8;
         private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
         private const int _maxMessageSize = 256 * 1024;
+
+        private readonly DatadogConfiguration _config;
+        private readonly string _url;
+        private readonly LogFormatter _formatter;
+        private readonly HttpClient _client;
 
         /// <summary>
         /// Max number of retries when sending failed.
         /// </summary>
-        private const int MaxRetries = 1;
+        private const int MaxRetries = 10;
 
         /// <summary>
         /// Max backoff used when sending failed.
@@ -75,7 +75,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     // Flush the chunkBuffer to the chunks and reset the chunkBuffer
                     chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]"));
-                    chunkBuffer = new List<string>(events.Count());
+                    chunkBuffer.Clear();
                     currentSize = 0;
                 }
                 chunkBuffer.Add(formattedLog);

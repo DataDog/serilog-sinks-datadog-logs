@@ -13,7 +13,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// The Datadog logs-backend URL.
         /// </summary>
-        public const string DDUrl = "intake.logs.datadoghq.com";
+        public const string DDUrl = "https://http-intake.logs.datadoghq.com";
 
         /// <summary>
         /// The Datadog logs-backend TCP SSL port.
@@ -43,17 +43,17 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Use TCP or HTTP.
         /// </summary>
-        public bool UseHTTP { get; set; }
+        public bool UseTCP { get; set; }
 
         public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {
         }
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useHTTP = false)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false)
         {
             Url = url;
             Port = port;
             UseSSL = useSSL;
-            UseHTTP = useHTTP;
+            UseTCP = useTCP;
         }
     }
 }
