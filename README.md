@@ -1,6 +1,6 @@
 # Serilog.Sinks.Datadog.Logs
 
-A Serilog sink that send events and logs staight away to Datadog. By default the sink will use a TCP connection over SSL.
+A Serilog sink that send events and logs staight away to Datadog. By default the sink sends logs over HTTPS
 
 **Package** - [Serilog.Sinks.Datadog.Logs](http://nuget.org/packages/serilog.sinks.datadog.logs)
 | **Platforms** - .NET 4.5.1, netstandard1.3, netstandard2.0
@@ -11,12 +11,12 @@ var log = new LoggerConfiguration()
     .CreateLogger();
 ```
 
-You can override the default behavior by manually specifing the following properties (endpoint, port, useSSL).
+You can override the default behavior by manually specifing the following properties (url, port, useSSL, useTCP).
 
 You can also add the following properties (source, service, host, tags) to the Serilog sink.
 
 ```csharp
-var config = new DatadogConfiguration("intake.logs.datadoghq.com", 10516, true);
+var config = new DatadogConfiguration(url: "intake.logs.datadoghq.com", port: 10516, useSSL: true, useTCP: true);
 var log = new LoggerConfiguration()
     .WriteTo.DatadogLogs(
         "<API_KEY>",

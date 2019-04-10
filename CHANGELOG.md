@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+* HTTP is now the default sending method for logs (#24). This is a **breaking change** for
+users that were using a custom endpoint. TCP client can still be used by adding the `useTCP: true`
+in the `DatadogConfiguration` object.
+
 ## 0.2.0
 
 * Strong named the assembly (#22)
