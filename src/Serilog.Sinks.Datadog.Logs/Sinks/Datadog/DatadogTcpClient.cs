@@ -56,6 +56,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _config = config;
             _formatter = formatter;
             _apiKey = apiKey;
+            SelfLog.WriteLine("Creating TCP client with config: {0}", config);
         }
 
         /// <summary>

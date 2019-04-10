@@ -46,6 +46,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _client = new HttpClient();
             _url = $"{config.Url}/v1/input/{apiKey}";
             _formatter = formatter;
+            SelfLog.WriteLine("Creating HTTP client with config: {0}", config);
         }
 
         public async Task WriteAsync(IEnumerable<LogEvent> events)

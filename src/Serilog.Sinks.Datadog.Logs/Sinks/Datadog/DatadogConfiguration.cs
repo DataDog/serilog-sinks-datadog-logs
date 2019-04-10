@@ -55,5 +55,10 @@ namespace Serilog.Sinks.Datadog.Logs
             UseSSL = useSSL;
             UseTCP = useTCP;
         }
+
+        public override string ToString()
+        {
+            return string.Format("{{ Url: {0}, Port: {1}, UseSSL: {2}, UseTCP: {3} }}", Url, Port, UseSSL, UseTCP);
+        }
     }
 }
