@@ -97,7 +97,7 @@ namespace Serilog.Sinks.Datadog.Logs
             var content = new StringContent(payload, Encoding.UTF8, _content);
             for (int retry = 0; retry < MaxRetries; retry++)
             {
-                int backoff = (int)Math.Min(Math.Pow(retry, 2), MaxBackoff);
+                int backoff = (int)Math.Min(Math.Pow(2, retry), MaxBackoff);
                 if (retry > 0)
                 {
                     await Task.Delay(backoff * 1000);

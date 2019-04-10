@@ -28,7 +28,8 @@ namespace Serilog.Sinks.Datadog.Logs
             return new DatadogConfiguration(
                 url: datadogConfiguration?.Url ?? section.Url,
                 port: datadogConfiguration?.Port ?? section.Port,
-                useSSL: datadogConfiguration?.UseSSL ?? section.UseSSL
+                useSSL: datadogConfiguration?.UseSSL ?? section.UseSSL,
+                useTCP: datadogConfiguration?.UseTCP ?? section.UseTCP
             );
         }
     }
