@@ -1,7 +1,7 @@
 ﻿// Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2018 Datadog, Inc.
+// Copyright 2019 Datadog, Inc.
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -13,7 +13,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// The Datadog logs-backend URL.
         /// </summary>
-        public const string DDUrl = "intake.logs.datadoghq.com";
+        public const string DDUrl = "https://http-intake.logs.datadoghq.com";
 
         /// <summary>
         /// The Datadog logs-backend TCP SSL port.
@@ -40,14 +40,25 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public bool UseSSL { get; set; }
 
-        public DatadogConfiguration() : this(DDUrl, DDPort, true) {
+        /// <summary>
+        /// Use TCP or HTTP.
+        /// </summary>
+        public bool UseTCP { get; set; }
+
+        public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {
         }
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false)
         {
             Url = url;
             Port = port;
             UseSSL = useSSL;
+            UseTCP = useTCP;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{{ Url: {0}, Port: {1}, UseSSL: {2}, UseTCP: {3} }}", Url, Port, UseSSL, UseTCP);
         }
     }
 }
