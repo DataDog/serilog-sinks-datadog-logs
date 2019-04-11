@@ -13,9 +13,14 @@ var log = new LoggerConfiguration()
     .CreateLogger();
 ```
 
-You can override the default behavior by manually specifing the following properties (url, port, useSSL, useTCP).
+By default the logs are forwarded to Datadog via **HTTPS** on port 443 to the US site.
+You can change the site to EU by using the `url` property and set it to `https://http-intake.logs.datadoghq.eu`.
+
+You can override the default behavior and use **TCP** forwarding by manually specifing the following properties (url, port, useSSL, useTCP).
 
 You can also add the following properties (source, service, host, tags) to the Serilog sink.
+
+* Example with a TCP forwarder which add the source, service, host and a list of tags to the logs:
 
 ```csharp
 var config = new DatadogConfiguration(url: "intake.logs.datadoghq.com", port: 10516, useSSL: true, useTCP: true);
@@ -90,11 +95,6 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
         "source": "<SOURCE_NAME>",
         "host": "<HOST_NAME>",
         "tags": ["<TAG_1>:<VALUE_1>", "<TAG_2>:<VALUE_2>"],
-        "configurationSection": {
-          "url": "intake.logs.datadoghq.com",
-          "port": 10516,
-          "useSSL": true
-        }
       }
     }
   ],
