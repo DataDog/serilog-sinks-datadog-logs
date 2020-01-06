@@ -46,7 +46,6 @@ namespace Serilog.Sinks.Datadog.Logs
             _client = new HttpClient();
             _url = $"{config.Url}/v1/input/{apiKey}";
             _formatter = formatter;
-            SelfLog.WriteLine("Creating HTTP client with config: {0}", config);
         }
 
         public async Task WriteAsync(IEnumerable<LogEvent> events)
@@ -106,9 +105,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
                 try
                 {
-                    SelfLog.WriteLine("Sending payload to Datadog: {0}", payload);
                     var result = await _client.PostAsync(_url, content);
-                    SelfLog.WriteLine("Statuscode: {0}", result.StatusCode);
                     if (result == null) { continue; }
                     if ((int)result.StatusCode >= 500) { continue; }
                     if ((int)result.StatusCode >= 400) { break; }
