@@ -24,19 +24,16 @@
     <Compile Remove="Configuration\Extensions\Microsoft.Extensions.Configuration\**\*.*" />
     <Compile Remove="Configuration\Extensions\System.Configuration\**\*.*" />
     <Compile Remove="Configuration\Implementations\Microsoft.Extensions.Configuration\**\*.*" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.1.1" />
-    <PackageReference Include="System.Net.Security" Version="4.3.2" />
-    <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
-    <PackageReference Include="System.Threading" Version="4.3.0" />
     <Compile Include="Configuration\Extensions\Microsoft.Extensions.Configuration\**\*.cs" />
     <Compile Include="Configuration\Implementations\Microsoft.Extensions.Configuration\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <Compile Include="Configuration\Extensions\System.Configuration\**\*.cs" />
   </ItemGroup>
 
