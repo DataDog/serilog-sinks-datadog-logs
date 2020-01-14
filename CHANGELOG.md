@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+* Remove excessive selflog
+* Cleanup dependencies
+
 ## 0.3.0
 
 * HTTP is now the default sending method for logs (#24). This is a **breaking change** for
