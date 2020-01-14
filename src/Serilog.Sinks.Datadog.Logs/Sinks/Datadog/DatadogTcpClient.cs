@@ -56,7 +56,6 @@ namespace Serilog.Sinks.Datadog.Logs
             _config = config;
             _formatter = formatter;
             _apiKey = apiKey;
-            SelfLog.WriteLine("Creating TCP client with config: {0}", config);
         }
 
         /// <summary>
@@ -113,7 +112,6 @@ namespace Serilog.Sinks.Datadog.Logs
 
                 try
                 {
-                    SelfLog.WriteLine("Sending payload to Datadog: {0}", payload);
                     byte[] data = UTF8.GetBytes(payload);
                     _stream.Write(data, 0, data.Length);
                     return;
