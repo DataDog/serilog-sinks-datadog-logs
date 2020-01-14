@@ -27,6 +27,7 @@ namespace Serilog
         /// <param name="tags">Custom tags.</param>
         /// <param name="configuration">The Datadog logs client configuration.</param>
         /// <param name="configurationSection">A config section defining the datadog configuration.</param>
+        /// <param name="restrictedToMinimumLevel">The minimum level for this sink</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
@@ -38,7 +39,7 @@ namespace Serilog
             string[] tags = null,
             DatadogConfiguration configuration = null,
             IConfigurationSection configurationSection = null,
-            LogEventLevel logLevel = LevelAlias.Minimum)
+            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum)
         {
             if (loggerConfiguration == null)
             {
@@ -51,7 +52,7 @@ namespace Serilog
 
             var config = ApplyMicrosoftExtensionsConfiguration.ConfigureDatadogConfiguration(configuration, configurationSection);
 
-            return loggerConfiguration.Sink(new DatadogSink(apiKey, source, service, host, tags, config), logLevel);
+            return loggerConfiguration.Sink(new DatadogSink(apiKey, source, service, host, tags, config), restrictedToMinimumLevel);
         }
     }
 }
