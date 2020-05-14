@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard1.3;net45</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard1.3;net45;net472</TargetFrameworks>
     <AssemblyName>Serilog.Sinks.Datadog.Logs</AssemblyName>
     <PackageId>Serilog.Sinks.Datadog.Logs</PackageId>
-    <PackageVersion>0.3.1</PackageVersion>
+    <PackageVersion>0.3.2</PackageVersion>
     <Authors>Datadog</Authors>
     <Title>Serilog Sink Datadog Logs</Title>
     <Description>Serilog Sink that sends log events to Datadog https://www.datadoghq.com/</Description>
@@ -26,13 +26,17 @@
     <Compile Remove="Configuration\Implementations\Microsoft.Extensions.Configuration\**\*.*" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net472'">
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.1.1" />
     <Compile Include="Configuration\Extensions\Microsoft.Extensions.Configuration\**\*.cs" />
     <Compile Include="Configuration\Implementations\Microsoft.Extensions.Configuration\**\*.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'net472'">
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' And '$(TargetFramework)' != 'net472'">
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <Compile Include="Configuration\Extensions\System.Configuration\**\*.cs" />
   </ItemGroup>

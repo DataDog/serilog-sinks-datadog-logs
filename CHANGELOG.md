@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+* Added .NET Framework 4.7.2 as a compilation target to resolve compatibility issues (#39)
+
 ## 0.3.1
 
 * Remove excessive selflog
