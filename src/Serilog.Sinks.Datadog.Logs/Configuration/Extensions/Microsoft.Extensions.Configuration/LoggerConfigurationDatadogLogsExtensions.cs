@@ -27,6 +27,13 @@ namespace Serilog
         /// <param name="tags">Custom tags.</param>
         /// <param name="configuration">The Datadog logs client configuration.</param>
         /// <param name="configurationSection">A config section defining the datadog configuration.</param>
+        /// <param name="logLevel">The minimum log level for the sink.</param>
+        /// <param name="batchSizeLimit">The maximum number of events to emit in a single batch.</param>
+        /// <param name="batchPeriod">The time to wait before emitting a new event batch.</param>
+        /// <param name="queueLimit">
+        /// Maximum number of events to hold in the sink's internal queue, or <c>null</c>
+        /// for an unbounded queue. The default is <c>10000</c>
+        /// </param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
@@ -38,7 +45,10 @@ namespace Serilog
             string[] tags = null,
             DatadogConfiguration configuration = null,
             IConfigurationSection configurationSection = null,
-            LogEventLevel logLevel = LevelAlias.Minimum)
+            LogEventLevel logLevel = LevelAlias.Minimum,
+            int? batchSizeLimit = null,
+            TimeSpan? batchPeriod = null,
+            int? queueLimit = null)
         {
             if (loggerConfiguration == null)
             {
@@ -50,8 +60,9 @@ namespace Serilog
             }
 
             var config = ApplyMicrosoftExtensionsConfiguration.ConfigureDatadogConfiguration(configuration, configurationSection);
+            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit);
 
-            return loggerConfiguration.Sink(new DatadogSink(apiKey, source, service, host, tags, config), logLevel);
+            return loggerConfiguration.Sink(sink);
         }
     }
 }

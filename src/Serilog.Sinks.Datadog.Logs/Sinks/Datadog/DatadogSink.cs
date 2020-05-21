@@ -26,7 +26,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// The time to wait before emitting a new event batch.
         /// </summary>
-        private static readonly TimeSpan Period = TimeSpan.FromSeconds(2);
+        private static readonly TimeSpan DefaultBatchPeriod = TimeSpan.FromSeconds(2);
 
         /// <summary>
         /// Settings to drop null values.
@@ -36,9 +36,16 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// The maximum number of events to emit in a single batch.
         /// </summary>
-        private const int BatchSizeLimit = 50;
+        private const int DefaultBatchSizeLimit = 50;
 
-        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config) : base(BatchSizeLimit, Period)
+        /// <summary>
+        /// Maximum number of events to hold in the sink's internal queue, or <c>null</c>
+        /// for an unbounded queue. The default is <c>10000</c>.
+        /// </summary>
+        private const int DefaultQueueLimit = 10000;
+
+        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null)
+            : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod)
         {
             if (config.UseTCP)
             {
@@ -48,6 +55,27 @@ namespace Serilog.Sinks.Datadog.Logs
             {
                 _client = new DatadogHttpClient(config, new LogFormatter(source, service, host, tags), apiKey);
             }
+        }
+
+        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, int? queueLimit = null)
+            : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod, queueLimit ?? DefaultQueueLimit)
+        {
+            if (config.UseTCP)
+            {
+                _client = new DatadogTcpClient(config, new LogFormatter(source, service, host, tags), apiKey);
+            }
+            else
+            {
+                _client = new DatadogHttpClient(config, new LogFormatter(source, service, host, tags), apiKey);
+            }
+        }
+
+        public static DatadogSink Create(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, int? queueLimit = null)
+        {
+            if (queueLimit.HasValue)
+                return new DatadogSink(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit);
+
+            return new DatadogSink(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod);
         }
 
         /// <summary>
