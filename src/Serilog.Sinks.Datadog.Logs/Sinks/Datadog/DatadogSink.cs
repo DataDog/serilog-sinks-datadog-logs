@@ -38,12 +38,6 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int DefaultBatchSizeLimit = 50;
 
-        /// <summary>
-        /// Maximum number of events to hold in the sink's internal queue, or <c>null</c>
-        /// for an unbounded queue. The default is <c>10000</c>.
-        /// </summary>
-        private const int DefaultQueueLimit = 10000;
-
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod)
         {
@@ -57,8 +51,8 @@ namespace Serilog.Sinks.Datadog.Logs
             }
         }
 
-        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, int? queueLimit = null)
-            : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod, queueLimit ?? DefaultQueueLimit)
+        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int queueLimit, int? batchSizeLimit = null, TimeSpan? batchPeriod = null)
+            : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod, queueLimit)
         {
             if (config.UseTCP)
             {
@@ -73,7 +67,7 @@ namespace Serilog.Sinks.Datadog.Logs
         public static DatadogSink Create(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, int? queueLimit = null)
         {
             if (queueLimit.HasValue)
-                return new DatadogSink(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit);
+                return new DatadogSink(apiKey, source, service, host, tags, config, queueLimit.Value, batchSizeLimit, batchPeriod);
 
             return new DatadogSink(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod);
         }
