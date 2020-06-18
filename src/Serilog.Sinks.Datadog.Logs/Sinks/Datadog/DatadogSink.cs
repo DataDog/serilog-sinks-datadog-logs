@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Serilog.Events;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.PeriodicBatching;
-using Newtonsoft.Json;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -21,17 +20,12 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Shared JSON formatter.
         /// </summary>
-        private static readonly JsonFormatter formatter = new JsonFormatter(renderMessage: true);
+        private static readonly JsonFormatter Formatter = new JsonFormatter(renderMessage: true);
 
         /// <summary>
         /// The time to wait before emitting a new event batch.
         /// </summary>
         private static readonly TimeSpan DefaultBatchPeriod = TimeSpan.FromSeconds(2);
-
-        /// <summary>
-        /// Settings to drop null values.
-        /// </summary>
-        private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
         /// <summary>
         /// The maximum number of events to emit in a single batch.
@@ -41,27 +35,13 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod)
         {
-            if (config.UseTCP)
-            {
-                _client = new DatadogTcpClient(config, new LogFormatter(source, service, host, tags), apiKey);
-            }
-            else
-            {
-                _client = new DatadogHttpClient(config, new LogFormatter(source, service, host, tags), apiKey);
-            }
+            _client = CreateDatadogClient(apiKey, source, service, host, tags, config);
         }
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int queueLimit, int? batchSizeLimit = null, TimeSpan? batchPeriod = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod, queueLimit)
         {
-            if (config.UseTCP)
-            {
-                _client = new DatadogTcpClient(config, new LogFormatter(source, service, host, tags), apiKey);
-            }
-            else
-            {
-                _client = new DatadogHttpClient(config, new LogFormatter(source, service, host, tags), apiKey);
-            }
+            _client = CreateDatadogClient(apiKey, source, service, host, tags, config);
         }
 
         public static DatadogSink Create(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, int? queueLimit = null)
@@ -83,8 +63,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 return;
             }
 
-            var tasks = _client.WriteAsync(events);
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            await _client.WriteAsync(events).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -96,6 +75,19 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             _client.Close();
             base.Dispose(disposing);
+        }
+
+        private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration configuration)
+        {
+            var logFormatter = new LogFormatter(source, service, host, tags);
+            if (configuration.UseTCP)
+            {
+                return new DatadogTcpClient(configuration, logFormatter, apiKey);
+            }
+            else
+            {
+                return new DatadogHttpClient(configuration, logFormatter, apiKey);
+            }
         }
     }
 }
