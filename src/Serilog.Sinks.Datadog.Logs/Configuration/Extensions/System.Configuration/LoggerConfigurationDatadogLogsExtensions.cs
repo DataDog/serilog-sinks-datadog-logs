@@ -25,7 +25,7 @@ namespace Serilog
         /// <param name="host">The host name.</param>
         /// <param name="tags">Custom tags.</param>
         /// <param name="configuration">The Datadog logs client configuration.</param>
-        /// <param name="restrictedToMinimumLevel">The minimum log level for the sink.</param>
+        /// <param name="logLevel">The minimum log level for the sink.</param>
         /// <param name="batchSizeLimit">The maximum number of events to emit in a single batch.</param>
         /// <param name="batchPeriod">The time to wait before emitting a new event batch.</param>
         /// <param name="queueLimit">
@@ -42,7 +42,7 @@ namespace Serilog
             string host = null,
             string[] tags = null,
             DatadogConfiguration configuration = null,
-            LogEventLevel restrictedToMinimumLevel = LevelAlias.Minimum,
+            LogEventLevel logLevel = LevelAlias.Minimum,
             int? batchSizeLimit = null,
             TimeSpan? batchPeriod = null,
             int? queueLimit = null)
@@ -59,7 +59,7 @@ namespace Serilog
             configuration = (configuration != null) ? configuration : new DatadogConfiguration();
             var sink = DatadogSink.Create(apiKey, source, service, host, tags, configuration, batchSizeLimit, batchPeriod, queueLimit);
 
-            return loggerConfiguration.Sink(sink, restrictedToMinimumLevel);
+            return loggerConfiguration.Sink(sink, logLevel);
         }
     }
 }
