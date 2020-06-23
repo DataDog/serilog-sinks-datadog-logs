@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Serilog.Events;
-using Serilog.Formatting.Json;
 using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog.Sinks.Datadog.Logs
@@ -16,11 +15,6 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogSink : PeriodicBatchingSink
     {
         private readonly IDatadogClient _client;
-
-        /// <summary>
-        /// Shared JSON formatter.
-        /// </summary>
-        private static readonly JsonFormatter Formatter = new JsonFormatter(renderMessage: true);
 
         /// <summary>
         /// The time to wait before emitting a new event batch.
