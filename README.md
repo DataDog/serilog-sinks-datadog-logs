@@ -79,6 +79,9 @@ Results in the following JSON Object log entry when viewed in DataDog:
 }
 ```
 
+OBS!  
+If a log message exceeds the max size allowed (defined as: `_maxSize = 2 * 1024 * 1024 - 51;`) the message is **not sent** to Datadog.
+
 ## Configuration from `appsettings.json`
 
 Since 0.2.0, you can configure the Datadog sink by using an `appsettings.json` file with
