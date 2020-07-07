@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2
+
+* Allow batch size, period and queue limit to be set (#41). Thanks @benfoster.
+
 ## 0.3.1
 
 * Remove excessive selflog
