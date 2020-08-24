@@ -75,8 +75,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private void RenameKey<TKey, TValue>(IDictionary<TKey, TValue> dict,
                                            TKey oldKey, TKey newKey)
         {
-            TValue value;
-            if (dict.TryGetValue(oldKey, out value))
+            if (dict.TryGetValue(oldKey, out TValue value))
             {
                 dict.Remove(oldKey);
                 dict.Add(newKey, value);
