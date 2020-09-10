@@ -23,6 +23,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly DatadogConfiguration _config;
         private readonly string _url;
         private readonly LogFormatter _formatter;
+        private readonly Action<Exception> _exceptionHandler;
         private readonly HttpClient _client;
 
         /// <summary>
@@ -40,12 +41,13 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
 
-        public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey)
+        public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, Action<Exception> exceptionHandler)
         {
             _config = config;
             _client = new HttpClient();
             _url = $"{config.Url}/v1/input/{apiKey}";
             _formatter = formatter;
+            _exceptionHandler = exceptionHandler;
         }
 
         public async Task WriteAsync(IEnumerable<LogEvent> events)
@@ -127,7 +129,13 @@ namespace Serilog.Sinks.Datadog.Logs
                     continue;
                 }
             }
-            SelfLog.WriteLine("Could not send payload to Datadog: {0}", payload);
+            var error = new CannotSendLogEventException(payload, logEventChunk.LogEvents);
+            if (_exceptionHandler != null)
+            {
+                _exceptionHandler(error);
+            }
+
+            SelfLog.WriteLine(error.ToString());
         }
 
         void IDatadogClient.Close() { }
