@@ -100,7 +100,7 @@ namespace Serilog.Sinks.Datadog.Logs
             return new LogEventChunk
             {
                 Payload = prefix + String.Join(delimiter, collection) + suffix,
-                LogEvents = new List<LogEvent>(logEvents),
+                LogEvents = new List<LogEvent>(logEvents), // Copy `logEvents` as `logEvents` is reused.
             };
         }
 
