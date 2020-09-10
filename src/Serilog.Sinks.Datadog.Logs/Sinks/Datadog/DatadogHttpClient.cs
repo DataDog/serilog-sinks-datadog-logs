@@ -56,13 +56,14 @@ namespace Serilog.Sinks.Datadog.Logs
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
-        private List<String> SerializeEvents(IEnumerable<LogEvent> events)
+        private List<LogEventChunk> SerializeEvents(IEnumerable<LogEvent> events)
         {
-            List<string> chunks = new List<string>();
+            var chunks = new List<LogEventChunk>();
 
             int currentSize = 0;
 
             var chunkBuffer = new List<string>(events.Count());
+            var logEvents = new List<LogEvent>(events.Count());
             foreach (var logEvent in events)
             {
                 var formattedLog = _formatter.formatMessage(logEvent);
@@ -74,26 +75,36 @@ namespace Serilog.Sinks.Datadog.Logs
                 if (currentSize + logSize > _maxSize)
                 {
                     // Flush the chunkBuffer to the chunks and reset the chunkBuffer
-                    chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]"));
+                    chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
                     chunkBuffer.Clear();
+                    logEvents.Clear();
                     currentSize = 0;
                 }
                 chunkBuffer.Add(formattedLog);
+                logEvents.Add(logEvent);
                 currentSize += logSize;
             }
-            chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]"));
+            if (chunkBuffer.Count != 0)
+            {
+                chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
+            }
 
             return chunks;
 
         }
 
-        private static string GenerateChunk(IEnumerable<string> collection, string delimiter, string prefix, string suffix)
+        private static LogEventChunk GenerateChunk(IEnumerable<string> collection, string delimiter, string prefix, string suffix, IEnumerable<LogEvent> logEvents)
         {
-            return prefix + String.Join(delimiter, collection) + suffix;
+            return new LogEventChunk
+            {
+                Payload = prefix + String.Join(delimiter, collection) + suffix,
+                LogEvents = new List<LogEvent>(logEvents),
+            };
         }
 
-        private async Task Post(string payload)
+        private async Task Post(LogEventChunk logEventChunk)
         {
+            var payload = logEventChunk.Payload;
             var content = new StringContent(payload, Encoding.UTF8, _content);
             for (int retry = 0; retry < MaxRetries; retry++)
             {
@@ -119,6 +130,12 @@ namespace Serilog.Sinks.Datadog.Logs
             SelfLog.WriteLine("Could not send payload to Datadog: {0}", payload);
         }
 
-        void IDatadogClient.Close() {}
+        void IDatadogClient.Close() { }
+
+        private class LogEventChunk
+        {
+            public string Payload { get; set; }
+            public IEnumerable<LogEvent> LogEvents { get; set; }
+        }
     }
 }
