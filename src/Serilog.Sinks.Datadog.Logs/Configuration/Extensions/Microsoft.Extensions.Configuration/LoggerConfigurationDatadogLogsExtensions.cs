@@ -34,7 +34,8 @@ namespace Serilog
         /// Maximum number of events to hold in the sink's internal queue, or <c>null</c>
         /// for an unbounded queue. The default is <c>10000</c>
         /// </param>
-        /// <param name="exceptionHandler">This function is called when an exception occurs.</param>
+        /// <param name="exceptionHandler">This function is called when an exception occurs when using 
+        /// DatadogConfiguration.UseTCP=false (the default configuration)</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
