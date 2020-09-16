@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
 
@@ -15,6 +16,7 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogSink : PeriodicBatchingSink
     {
         private readonly IDatadogClient _client;
+        private readonly Action<Exception> _exceptionHandler;
 
         /// <summary>
         /// The time to wait before emitting a new event batch.
@@ -29,13 +31,15 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod)
         {
-            _client = CreateDatadogClient(apiKey, source, service, host, tags, config, exceptionHandler);
+            _client = CreateDatadogClient(apiKey, source, service, host, tags, config);
+            _exceptionHandler = exceptionHandler;
         }
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int queueLimit, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod, queueLimit)
         {
-            _client = CreateDatadogClient(apiKey, source, service, host, tags, config, exceptionHandler);
+            _client = CreateDatadogClient(apiKey, source, service, host, tags, config);
+            _exceptionHandler = exceptionHandler;
         }
 
         public static DatadogSink Create(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, int? queueLimit = null, Action<Exception> exceptionHandler = null)
@@ -52,12 +56,20 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <param name="events">The events to emit.</param>
         protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
         {
-            if (!events.Any())
+            try
             {
-                return;
-            }
+                if (!events.Any())
+                {
+                    return;
+                }
 
-            await _client.WriteAsync(events).ConfigureAwait(false);
+                var task = _client.WriteAsync(events);
+                await RunTask(task);
+            }
+            catch (Exception e)
+            {
+                OnException(e);
+            }
         }
 
         /// <summary>
@@ -71,7 +83,7 @@ namespace Serilog.Sinks.Datadog.Logs
             base.Dispose(disposing);
         }
 
-        private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration configuration, Action<Exception> exceptionHandler)
+        private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration configuration)
         {
             var logFormatter = new LogFormatter(source, service, host, tags);
             if (configuration.UseTCP)
@@ -80,8 +92,40 @@ namespace Serilog.Sinks.Datadog.Logs
             }
             else
             {
-                return new DatadogHttpClient(configuration, logFormatter, apiKey, exceptionHandler);
+                return new DatadogHttpClient(configuration, logFormatter, apiKey);
             }
+        }
+
+        private async Task RunTask(Task task)
+        {
+            try
+            {
+                await task.ConfigureAwait(false);
+            }
+            catch
+            {
+                if (task?.Exception != null)
+                {
+                    foreach (var innerException in task.Exception.InnerExceptions)
+                    {
+                        OnException(innerException);
+                    }
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        private void OnException(Exception e)
+        {
+            if (_exceptionHandler != null)
+            {
+                _exceptionHandler(e);
+            }
+
+            SelfLog.WriteLine("{0}", e.Message);
         }
     }
 }

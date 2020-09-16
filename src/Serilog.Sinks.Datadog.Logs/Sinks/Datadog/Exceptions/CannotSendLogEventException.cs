@@ -3,20 +3,16 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2020 Datadog, Inc.
 
-using System;
 using Serilog.Events;
 using System.Collections.Generic;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
-    public class CannotSendLogEventException : Exception
+    public class CannotSendLogEventException : LogEventException
     {
         public CannotSendLogEventException(string payload, IEnumerable<LogEvent> logEvents)
-            : base($"Could not send payload to Datadog: {payload}")
+            : base($"Could not send payload to Datadog: {payload}", logEvents)
         {
-            LogEvents = logEvents;
         }
-
-        public IEnumerable<LogEvent> LogEvents { get; }
     }
 }
