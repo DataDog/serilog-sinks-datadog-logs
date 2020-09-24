@@ -6,7 +6,6 @@
 using System;
 using System.Threading.Tasks;
 using System.Text;
-using Serilog.Debugging;
 using System.Net.Http;
 using Serilog.Events;
 using System.Collections.Generic;
@@ -48,52 +47,73 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter = formatter;
         }
 
-        public async Task WriteAsync(IEnumerable<LogEvent> events)
+        public Task WriteAsync(IEnumerable<LogEvent> events)
         {
-            var chunks = SerializeEvents(events);
-            var tasks = chunks.Select(Post);
+            var serializedEvents = SerializeEvents(events);
+            var tasks = serializedEvents.LogEventChunks.Select(Post);
 
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            var tooBigTask = Task.Run(() =>
+            {
+                if (serializedEvents.TooBigLogEvents.Count > 0)
+                {
+                    throw new TooBigLogEventException(serializedEvents.TooBigLogEvents);
+                }
+            });
+
+            tasks = tasks.Concat(new[] { tooBigTask });
+
+            return Task.WhenAll(tasks);
         }
 
-        private List<String> SerializeEvents(IEnumerable<LogEvent> events)
+        private SerializedEvents SerializeEvents(IEnumerable<LogEvent> events)
         {
-            List<string> chunks = new List<string>();
-
+            var serializedEvents = new SerializedEvents();
             int currentSize = 0;
 
             var chunkBuffer = new List<string>(events.Count());
+            var logEvents = new List<LogEvent>(events.Count());
             foreach (var logEvent in events)
             {
                 var formattedLog = _formatter.formatMessage(logEvent);
                 var logSize = Encoding.UTF8.GetByteCount(formattedLog);
                 if (logSize > _maxMessageSize)
                 {
+                    serializedEvents.TooBigLogEvents.Add(logEvent);
                     continue;  // The log is dropped because the backend would not accept it
                 }
                 if (currentSize + logSize > _maxSize)
                 {
                     // Flush the chunkBuffer to the chunks and reset the chunkBuffer
-                    chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]"));
+                    serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
                     chunkBuffer.Clear();
+                    logEvents.Clear();
                     currentSize = 0;
                 }
                 chunkBuffer.Add(formattedLog);
+                logEvents.Add(logEvent);
                 currentSize += logSize;
             }
-            chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]"));
+            if (chunkBuffer.Count != 0)
+            {
+                serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
+            }
 
-            return chunks;
+            return serializedEvents;
 
         }
 
-        private static string GenerateChunk(IEnumerable<string> collection, string delimiter, string prefix, string suffix)
+        private static LogEventChunk GenerateChunk(IEnumerable<string> collection, string delimiter, string prefix, string suffix, IEnumerable<LogEvent> logEvents)
         {
-            return prefix + String.Join(delimiter, collection) + suffix;
+            return new LogEventChunk
+            {
+                Payload = prefix + String.Join(delimiter, collection) + suffix,
+                LogEvents = new List<LogEvent>(logEvents), // Copy `logEvents` as `logEvents` is reused.
+            };
         }
 
-        private async Task Post(string payload)
+        private async Task Post(LogEventChunk logEventChunk)
         {
+            var payload = logEventChunk.Payload;
             var content = new StringContent(payload, Encoding.UTF8, _content);
             for (int retry = 0; retry < MaxRetries; retry++)
             {
@@ -116,9 +136,22 @@ namespace Serilog.Sinks.Datadog.Logs
                     continue;
                 }
             }
-            SelfLog.WriteLine("Could not send payload to Datadog: {0}", payload);
+
+            throw new CannotSendLogEventException(payload, logEventChunk.LogEvents);
         }
 
-        void IDatadogClient.Close() {}
+        void IDatadogClient.Close() { }
+
+        private class LogEventChunk
+        {
+            public string Payload { get; set; }
+            public IEnumerable<LogEvent> LogEvents { get; set; }
+        }
+
+        private class SerializedEvents
+        {
+            public List<LogEventChunk> LogEventChunks { get; } = new List<LogEventChunk>();
+            public List<LogEvent> TooBigLogEvents { get; } = new List<LogEvent>();
+        }
     }
 }
