@@ -2,7 +2,7 @@
 
 ## 0.3.3
 
-* Add a handler called when an exception occurs (#43).
+* Add a handler called when an exception occurs (#51).
 * Minor refactoring (#42). Thanks @SychevIgor
 
 ## 0.3.2
