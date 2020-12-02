@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+
+* Add more net framework targets to solve incompatibility issues with NuGet version resolving to "nearest" .net framework vs compiler targets
+
 ## 0.3.3
 
 * Add a handler called when an exception occurs (#51).
