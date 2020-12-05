@@ -60,13 +60,20 @@ namespace Serilog.Sinks.Datadog.Logs
             if (_host != null) { logEventAsDict.Add("host", _host); }
             if (_tags != null) { logEventAsDict.Add("ddtags", _tags); }
 
-            // Rename serilog attributes to Datadog reserved attributes to have them properly
-            // displayed on the Log Explorer
-            RenameKey(logEventAsDict, "RenderedMessage", "message");
-            RenameKey(logEventAsDict, "Level", "level");
+            if (_source != CSHARP) RenameAttributesToDatadogReservedAttributes(logEventAsDict);
 
             // Convert back the dict to a JSON string
             return JsonConvert.SerializeObject(logEventAsDict, Newtonsoft.Json.Formatting.None, settings);
+        }
+
+        /// <summary>
+        /// Rename serilog attributes to Datadog reserved attributes to have them properly
+        /// displayed on the Log Explorer
+        /// </summary>
+        private void RenameAttributesToDatadogReservedAttributes(Dictionary<string, dynamic> logEventAsDict)
+        {
+            RenameKey(logEventAsDict, "RenderedMessage", "message");
+            RenameKey(logEventAsDict, "Level", "level");
         }
 
         /// <summary>
