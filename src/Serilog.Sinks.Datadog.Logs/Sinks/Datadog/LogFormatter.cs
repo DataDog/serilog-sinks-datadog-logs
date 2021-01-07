@@ -45,7 +45,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// formatMessage enrich the log event with DataDog metadata such as source, service, host and tags.
         /// </summary>
-        public string formatMessage(LogEvent logEvent)
+        public string FormatMessage(LogEvent logEvent)
         {
             var payload = new StringBuilder();
             var writer = new StringWriter(payload);

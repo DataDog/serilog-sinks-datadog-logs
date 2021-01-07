@@ -69,7 +69,7 @@ namespace Serilog.Sinks.Datadog.Logs
             var logEvents = new List<LogEvent>(events.Count);
             foreach (var logEvent in events)
             {
-                var formattedLog = _formatter.formatMessage(logEvent);
+                var formattedLog = _formatter.FormatMessage(logEvent);
                 var logSize = Encoding.UTF8.GetByteCount(formattedLog);
                 if (logSize > _maxMessageSize)
                 {
