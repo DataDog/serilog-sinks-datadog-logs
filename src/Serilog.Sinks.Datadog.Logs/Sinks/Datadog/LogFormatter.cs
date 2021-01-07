@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using Serilog.Events;
 using Serilog.Formatting.Json;
 using Newtonsoft.Json;
+
 namespace Serilog.Sinks.Datadog.Logs
 {
     public class LogFormatter

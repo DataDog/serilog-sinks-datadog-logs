@@ -3,7 +3,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
 
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Serilog.Events;

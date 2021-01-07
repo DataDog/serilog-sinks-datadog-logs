@@ -91,10 +91,8 @@ namespace Serilog.Sinks.Datadog.Logs
             {
                 return new DatadogTcpClient(configuration, logFormatter, apiKey);
             }
-            else
-            {
-                return new DatadogHttpClient(configuration, logFormatter, apiKey);
-            }
+
+            return new DatadogHttpClient(configuration, logFormatter, apiKey);
         }
 
         private async Task RunTask(Task task)

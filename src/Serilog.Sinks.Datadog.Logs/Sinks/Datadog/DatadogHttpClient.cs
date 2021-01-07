@@ -128,7 +128,6 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
                 catch (Exception)
                 {
-                    continue;
                 }
             }
 
