@@ -54,7 +54,7 @@ namespace Serilog.Sinks.Datadog.Logs
             // internal structure of the logEvent to give a nicely formatted JSON
             formatter.Format(logEvent, writer);
 
-            // Convert the JSON to a dictionnary and add the DataDog properties
+            // Convert the JSON to a dictionary and add the DataDog properties
             var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(payload.ToString());
             if (_source != null) { logEventAsDict.Add("ddsource", _source); }
             if (_service != null) { logEventAsDict.Add("service",_service); }
