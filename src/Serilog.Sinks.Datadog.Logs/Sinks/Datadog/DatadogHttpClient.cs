@@ -42,7 +42,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter = formatter;
         }
 
-        public Task WriteAsync(IEnumerable<LogEvent> events)
+        public Task WriteAsync(IReadOnlyCollection<LogEvent> events)
         {
             var serializedEvents = SerializeEvents(events);
             var tasks = serializedEvents.LogEventChunks.Select(Post);
@@ -60,13 +60,13 @@ namespace Serilog.Sinks.Datadog.Logs
             return Task.WhenAll(tasks);
         }
 
-        private SerializedEvents SerializeEvents(IEnumerable<LogEvent> events)
+        private SerializedEvents SerializeEvents(IReadOnlyCollection<LogEvent> events)
         {
             var serializedEvents = new SerializedEvents();
             int currentSize = 0;
 
-            var chunkBuffer = new List<string>(events.Count());
-            var logEvents = new List<LogEvent>(events.Count());
+            var chunkBuffer = new List<string>(events.Count);
+            var logEvents = new List<LogEvent>(events.Count);
             foreach (var logEvent in events)
             {
                 var formattedLog = _formatter.formatMessage(logEvent);

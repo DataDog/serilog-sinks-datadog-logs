@@ -73,7 +73,7 @@ namespace Serilog.Sinks.Datadog.Logs
             }
         }
 
-        public async Task WriteAsync(IEnumerable<LogEvent> events)
+        public async Task WriteAsync(IReadOnlyCollection<LogEvent> events)
         {
             var payloadBuilder = new StringBuilder();
             foreach (var logEvent in events)

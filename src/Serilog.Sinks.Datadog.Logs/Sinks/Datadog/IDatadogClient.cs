@@ -16,7 +16,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// Send payload to Datadog logs-backend.
         /// </summary>
         /// <param name="events">Serilog events to send.</param>
-        Task WriteAsync(IEnumerable<LogEvent> events);
+        Task WriteAsync(IReadOnlyCollection<LogEvent> events);
 
         /// <summary>
         /// Cleanup existing resources.
