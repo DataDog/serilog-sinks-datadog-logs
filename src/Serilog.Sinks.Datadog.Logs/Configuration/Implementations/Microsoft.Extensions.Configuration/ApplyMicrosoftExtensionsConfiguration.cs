@@ -29,7 +29,8 @@ namespace Serilog.Sinks.Datadog.Logs
                 url: datadogConfiguration?.Url ?? section.Url,
                 port: datadogConfiguration?.Port ?? section.Port,
                 useSSL: datadogConfiguration?.UseSSL ?? section.UseSSL,
-                useTCP: datadogConfiguration?.UseTCP ?? section.UseTCP
+                useTCP: datadogConfiguration?.UseTCP ?? section.UseTCP,
+                maxRetries:datadogConfiguration?.MaxRetries ?? section.MaxRetries
             );
         }
     }

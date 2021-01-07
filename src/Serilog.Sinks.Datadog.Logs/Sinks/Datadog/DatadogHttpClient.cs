@@ -25,11 +25,6 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly HttpClient _client;
 
         /// <summary>
-        /// Max number of retries when sending failed.
-        /// </summary>
-        private const int MaxRetries = 10;
-
-        /// <summary>
         /// Max backoff used when sending failed.
         /// </summary>
         private const int MaxBackoff = 30;
@@ -115,7 +110,7 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             var payload = logEventChunk.Payload;
             var content = new StringContent(payload, Encoding.UTF8, _content);
-            for (int retry = 0; retry < MaxRetries; retry++)
+            for (int retry = 0; retry < _config.MaxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(2, retry), MaxBackoff);
                 if (retry > 0)
