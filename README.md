@@ -41,15 +41,29 @@ var log = new LoggerConfiguration()
 Sending the following log:
 
 ```csharp
-var log = new LoggerConfiguration()
+using (var log = new LoggerConfiguration()
+    .WriteTo.DatadogLogs("<API_KEY>")
+    .CreateLogger())
+{    
+    // An example
+    var position = new { Latitude = 25, Longitude = 134 };
+    var elapsedMs = 34;
+
+    log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+}
+```
+or
+```csharp
+Log.Logger = new LoggerConfiguration()
     .WriteTo.DatadogLogs("<API_KEY>")
     .CreateLogger();
-
+    
 // An example
 var position = new { Latitude = 25, Longitude = 134 };
 var elapsedMs = 34;
 
-log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+Log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+Log.CloseAndFlush();
 ```
 
 In the platform, the log looks like as the following JSON Object:
