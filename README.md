@@ -8,9 +8,12 @@ A Serilog sink that send events and logs staight away to Datadog. By default the
 Note: For other .NET versions, ensure that the default TLS version used is `1.2`
 
 ```csharp
-var log = new LoggerConfiguration()
+using (var log = new LoggerConfiguration()
     .WriteTo.DatadogLogs("<API_KEY>")
-    .CreateLogger();
+    .CreateLogger())
+{
+    // Some code
+}
 ```
 
 By default the logs are forwarded to Datadog via **HTTPS** on port 443 to the US site.
@@ -24,7 +27,7 @@ You can also add the following properties (source, service, host, tags) to the S
 
 ```csharp
 var config = new DatadogConfiguration(url: "intake.logs.datadoghq.com", port: 10516, useSSL: true, useTCP: true);
-var log = new LoggerConfiguration()
+using (var log = new LoggerConfiguration()
     .WriteTo.DatadogLogs(
         "<API_KEY>",
         source: "<SOURCE_NAME>",
@@ -33,7 +36,10 @@ var log = new LoggerConfiguration()
         tags: new string[] {"<TAG_1>:<VALUE_1>", "<TAG_2>:<VALUE_2>"},
         configuration: config
     )
-    .CreateLogger();
+    .CreateLogger())
+{
+    // Some code
+}
 ```
 
 ## Example
