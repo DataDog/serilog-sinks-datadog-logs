@@ -8,9 +8,12 @@ A Serilog sink that send events and logs staight away to Datadog. By default the
 Note: For other .NET versions, ensure that the default TLS version used is `1.2`
 
 ```csharp
-var log = new LoggerConfiguration()
+using (var log = new LoggerConfiguration()
     .WriteTo.DatadogLogs("<API_KEY>")
-    .CreateLogger();
+    .CreateLogger())
+{
+    // Some code
+}
 ```
 
 By default the logs are forwarded to Datadog via **HTTPS** on port 443 to the US site.
@@ -24,7 +27,7 @@ You can also add the following properties (source, service, host, tags) to the S
 
 ```csharp
 var config = new DatadogConfiguration(url: "intake.logs.datadoghq.com", port: 10516, useSSL: true, useTCP: true);
-var log = new LoggerConfiguration()
+using (var log = new LoggerConfiguration()
     .WriteTo.DatadogLogs(
         "<API_KEY>",
         source: "<SOURCE_NAME>",
@@ -33,7 +36,10 @@ var log = new LoggerConfiguration()
         tags: new string[] {"<TAG_1>:<VALUE_1>", "<TAG_2>:<VALUE_2>"},
         configuration: config
     )
-    .CreateLogger();
+    .CreateLogger())
+{
+    // Some code
+}
 ```
 
 ## Example
@@ -41,15 +47,29 @@ var log = new LoggerConfiguration()
 Sending the following log:
 
 ```csharp
-var log = new LoggerConfiguration()
+using (var log = new LoggerConfiguration()
+    .WriteTo.DatadogLogs("<API_KEY>")
+    .CreateLogger())
+{    
+    // An example
+    var position = new { Latitude = 25, Longitude = 134 };
+    var elapsedMs = 34;
+
+    log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+}
+```
+or
+```csharp
+Log.Logger = new LoggerConfiguration()
     .WriteTo.DatadogLogs("<API_KEY>")
     .CreateLogger();
-
+    
 // An example
 var position = new { Latitude = 25, Longitude = 134 };
 var elapsedMs = 34;
 
-log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+Log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
+Log.CloseAndFlush();
 ```
 
 In the platform, the log looks like as the following JSON Object:
@@ -104,7 +124,6 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
   }
 }
 ```
-
 ## How to build the NuGet package
 
 Bump the version in `src/Serilog.Sinks.Datadog.Logs.csproj` and merge your branch
@@ -118,3 +137,9 @@ msbuild Serilog.Sinks.Datadog.Logs.sln /t:pack /p:Configuration=Release
 ```
 
 You can find the `.nupkg` file at `src/Serilog.Sinks.Datadog.Logs/bin/Release/Serilog.Sinks.Datadog.Logs.<version>.nupkg`
+
+## Serilog.Sinks.Async	
+As `Serilog.Sinks.Datadog.Logs` implements [Serilog.Sinks.PeriodicBatching](https://github.com/serilog/serilog-sinks-periodicbatching), using [Serilog.Sinks.Async](https://github.com/serilog/serilog-sinks-async) is not recommended.	
+
+From [Serilog.Sinks.Async documentation](https://github.com/serilog/serilog-sinks-async#serilogsinksasync---):	
+> Note: many of the network-based sinks (CouchDB, Elasticsearch, MongoDB, Seq, Splunk...) already perform asynchronous batching natively and do not benefit from this wrapper.
