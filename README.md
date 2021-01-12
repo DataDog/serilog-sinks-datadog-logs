@@ -137,3 +137,9 @@ msbuild Serilog.Sinks.Datadog.Logs.sln /t:pack /p:Configuration=Release
 ```
 
 You can find the `.nupkg` file at `src/Serilog.Sinks.Datadog.Logs/bin/Release/Serilog.Sinks.Datadog.Logs.<version>.nupkg`
+
+## Serilog.Sinks.Async	
+As `Serilog.Sinks.Datadog.Logs` implements [Serilog.Sinks.PeriodicBatching](https://github.com/serilog/serilog-sinks-periodicbatching), using [Serilog.Sinks.Async](https://github.com/serilog/serilog-sinks-async) is not recommended.	
+
+From [Serilog.Sinks.Async documentation](https://github.com/serilog/serilog-sinks-async#serilogsinksasync---):	
+> Note: many of the network-based sinks (CouchDB, Elasticsearch, MongoDB, Seq, Splunk...) already perform asynchronous batching natively and do not benefit from this wrapper.
