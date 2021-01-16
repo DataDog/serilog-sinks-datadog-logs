@@ -34,7 +34,7 @@ namespace Serilog
         /// Maximum number of events to hold in the sink's internal queue, or <c>null</c>
         /// for an unbounded queue. The default is <c>10000</c>
         /// </param>
-        /// <param name="exceptionHandler">This function is called when an exception occurs when using 
+        /// <param name="exceptionHandler">This function is called when an exception occurs when using
         /// DatadogConfiguration.UseTCP=false (the default configuration)</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
@@ -51,7 +51,8 @@ namespace Serilog
             int? batchSizeLimit = null,
             TimeSpan? batchPeriod = null,
             int? queueLimit = null,
-            Action<Exception> exceptionHandler = null)
+            Action<Exception> exceptionHandler = null,
+            bool renameProperties = false)
         {
             if (loggerConfiguration == null)
             {
@@ -63,7 +64,7 @@ namespace Serilog
             }
 
             var config = ApplyMicrosoftExtensionsConfiguration.ConfigureDatadogConfiguration(configuration, configurationSection);
-            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler);
+            var sink = DatadogSink.Create(apiKey, source, service, host, tags, renameProperties, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler);
 
             return loggerConfiguration.Sink(sink, logLevel);
         }

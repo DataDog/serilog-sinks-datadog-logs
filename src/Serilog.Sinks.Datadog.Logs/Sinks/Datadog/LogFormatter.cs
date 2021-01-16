@@ -17,6 +17,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly string _service;
         private readonly string _host;
         private readonly string _tags;
+        private readonly bool _renameProperties;
 
         /// <summary>
         /// Default source value for the serilog integration.
@@ -33,11 +34,12 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
-        public LogFormatter(string source, string service, string host, string[] tags)
+        public LogFormatter(string source, string service, string host, string[] tags, bool renameProperties)
         {
             _source = source ?? CSHARP;
             _service = service;
             _host = host;
+            _renameProperties = renameProperties;
             _tags = tags != null ? string.Join(",", tags) : null;
         }
 
@@ -60,13 +62,20 @@ namespace Serilog.Sinks.Datadog.Logs
             if (_host != null) { logEventAsDict.Add("host", _host); }
             if (_tags != null) { logEventAsDict.Add("ddtags", _tags); }
 
-            // Rename serilog attributes to Datadog reserved attributes to have them properly
-            // displayed on the Log Explorer
-            RenameKey(logEventAsDict, "RenderedMessage", "message");
-            RenameKey(logEventAsDict, "Level", "level");
+            if (_renameProperties) RenameAttributesToDatadogReservedAttributes(logEventAsDict);
 
             // Convert back the dict to a JSON string
             return JsonConvert.SerializeObject(logEventAsDict, Newtonsoft.Json.Formatting.None, settings);
+        }
+
+        /// <summary>
+        /// Rename serilog attributes to Datadog reserved attributes to have them properly
+        /// displayed on the Log Explorer
+        /// </summary>
+        private void RenameAttributesToDatadogReservedAttributes(Dictionary<string, dynamic> logEventAsDict)
+        {
+            RenameKey(logEventAsDict, "RenderedMessage", "message");
+            RenameKey(logEventAsDict, "Level", "level");
         }
 
         /// <summary>
