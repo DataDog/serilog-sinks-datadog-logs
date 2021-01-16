@@ -37,11 +37,6 @@ namespace Serilog.Sinks.Datadog.Logs
         private const string MessageDelimiter = "\n";
 
         /// <summary>
-        /// Max number of retries when sending failed.
-        /// </summary>
-        private const int MaxRetries = 5;
-
-        /// <summary>
         /// Max backoff used when sending failed.
         /// </summary>
         private const int MaxBackoff = 30;
@@ -78,18 +73,18 @@ namespace Serilog.Sinks.Datadog.Logs
             }
         }
 
-        public async Task WriteAsync(IEnumerable<LogEvent> events)
+        public async Task WriteAsync(IReadOnlyCollection<LogEvent> events)
         {
             var payloadBuilder = new StringBuilder();
             foreach (var logEvent in events)
             {
                 payloadBuilder.Append(_apiKey + WhiteSpace);
-                payloadBuilder.Append(_formatter.formatMessage(logEvent));
+                payloadBuilder.Append(_formatter.FormatMessage(logEvent));
                 payloadBuilder.Append(MessageDelimiter);
             }
             string payload = payloadBuilder.ToString();
 
-            for (int retry = 0; retry < MaxRetries; retry++)
+            for (int retry = 0; retry < _config.MaxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(retry, 2), MaxBackoff);
                 if (retry > 0)

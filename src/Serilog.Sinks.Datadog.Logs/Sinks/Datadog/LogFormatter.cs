@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using Serilog.Events;
 using Serilog.Formatting.Json;
 using Newtonsoft.Json;
+
 namespace Serilog.Sinks.Datadog.Logs
 {
     public class LogFormatter
@@ -44,7 +45,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// formatMessage enrich the log event with DataDog metadata such as source, service, host and tags.
         /// </summary>
-        public string formatMessage(LogEvent logEvent)
+        public string FormatMessage(LogEvent logEvent)
         {
             var payload = new StringBuilder();
             var writer = new StringWriter(payload);
@@ -53,7 +54,7 @@ namespace Serilog.Sinks.Datadog.Logs
             // internal structure of the logEvent to give a nicely formatted JSON
             formatter.Format(logEvent, writer);
 
-            // Convert the JSON to a dictionnary and add the DataDog properties
+            // Convert the JSON to a dictionary and add the DataDog properties
             var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(payload.ToString());
             if (_source != null) { logEventAsDict.Add("ddsource", _source); }
             if (_service != null) { logEventAsDict.Add("service",_service); }

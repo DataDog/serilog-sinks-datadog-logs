@@ -25,11 +25,6 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly HttpClient _client;
 
         /// <summary>
-        /// Max number of retries when sending failed.
-        /// </summary>
-        private const int MaxRetries = 10;
-
-        /// <summary>
         /// Max backoff used when sending failed.
         /// </summary>
         private const int MaxBackoff = 30;
@@ -47,7 +42,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter = formatter;
         }
 
-        public Task WriteAsync(IEnumerable<LogEvent> events)
+        public Task WriteAsync(IReadOnlyCollection<LogEvent> events)
         {
             var serializedEvents = SerializeEvents(events);
             var tasks = serializedEvents.LogEventChunks.Select(Post);
@@ -65,16 +60,16 @@ namespace Serilog.Sinks.Datadog.Logs
             return Task.WhenAll(tasks);
         }
 
-        private SerializedEvents SerializeEvents(IEnumerable<LogEvent> events)
+        private SerializedEvents SerializeEvents(IReadOnlyCollection<LogEvent> events)
         {
             var serializedEvents = new SerializedEvents();
             int currentSize = 0;
 
-            var chunkBuffer = new List<string>(events.Count());
-            var logEvents = new List<LogEvent>(events.Count());
+            var chunkBuffer = new List<string>(events.Count);
+            var logEvents = new List<LogEvent>(events.Count);
             foreach (var logEvent in events)
             {
-                var formattedLog = _formatter.formatMessage(logEvent);
+                var formattedLog = _formatter.FormatMessage(logEvent);
                 var logSize = Encoding.UTF8.GetByteCount(formattedLog);
                 if (logSize > _maxMessageSize)
                 {
@@ -115,7 +110,7 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             var payload = logEventChunk.Payload;
             var content = new StringContent(payload, Encoding.UTF8, _content);
-            for (int retry = 0; retry < MaxRetries; retry++)
+            for (int retry = 0; retry < _config.MaxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(2, retry), MaxBackoff);
                 if (retry > 0)
@@ -133,7 +128,6 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
                 catch (Exception)
                 {
-                    continue;
                 }
             }
 

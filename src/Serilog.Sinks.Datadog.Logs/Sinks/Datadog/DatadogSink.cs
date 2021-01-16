@@ -58,12 +58,13 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             try
             {
-                if (!events.Any())
+                var batch = events.ToArray();
+                if (!batch.Any())
                 {
                     return;
                 }
 
-                var task = _client.WriteAsync(events);
+                var task = _client.WriteAsync(batch);
                 await RunTask(task);
             }
             catch (Exception e)
@@ -90,10 +91,8 @@ namespace Serilog.Sinks.Datadog.Logs
             {
                 return new DatadogTcpClient(configuration, logFormatter, apiKey);
             }
-            else
-            {
-                return new DatadogHttpClient(configuration, logFormatter, apiKey);
-            }
+
+            return new DatadogHttpClient(configuration, logFormatter, apiKey);
         }
 
         private async Task RunTask(Task task)
