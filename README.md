@@ -115,6 +115,11 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
         "source": "<SOURCE_NAME>",
         "host": "<HOST_NAME>",
         "tags": ["<TAG_1>:<VALUE_1>", "<TAG_2>:<VALUE_2>"],
+        "configurationSection": {
+            "url": "<datadogUrl>",
+            "port": <datadogPort>,
+            "useSSL": <datadogUseSSL>
+          }
       }
     }
   ],
