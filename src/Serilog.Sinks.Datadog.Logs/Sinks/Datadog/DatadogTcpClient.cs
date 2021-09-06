@@ -5,6 +5,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using System.Text;
 using Serilog.Debugging;
 using System.Collections.Generic;
 using Serilog.Events;
+using System.Net.NetworkInformation;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -140,7 +142,35 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private bool IsConnectionClosed()
         {
-            return _client == null || _stream == null;
+            if (_client == null || _stream == null)
+            {
+                return true;
+            }
+
+#if NETSTANDARD1_3
+            // `IPGlobalProperties` does not exist, keep the same behavior as before.
+            return false;
+#else
+            TcpConnectionInformation[] connections = null;
+            try
+            {
+                connections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
+            }
+            catch (NotImplementedException)
+            {
+                // Happen when using Mono on MacOs. Keep the same behavior as before.
+                return false;
+            }
+            var currentConnection = connections.FirstOrDefault(
+                c => c.LocalEndPoint.Equals(_client.Client.LocalEndPoint)
+                    && c.RemoteEndPoint.Equals(_client.Client.RemoteEndPoint));
+            if (currentConnection == null || currentConnection.State != TcpState.Established)
+            {
+                SelfLog.WriteLine("TCP connection not established. Current state: {0}", currentConnection?.State);
+                return true;
+            }
+            return false;
+#endif
         }
 
         /// <summary>
