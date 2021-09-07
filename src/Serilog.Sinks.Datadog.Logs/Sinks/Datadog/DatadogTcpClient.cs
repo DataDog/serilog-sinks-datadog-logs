@@ -14,6 +14,7 @@ using Serilog.Debugging;
 using System.Collections.Generic;
 using Serilog.Events;
 using System.Net.NetworkInformation;
+using System.Net;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -27,6 +28,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly string _apiKey;
         private TcpClient _client;
         private Stream _stream;
+        private ConnectionMatcher _connectionMatcher;
 
         /// <summary>
         /// API Key / message-content delimiter.
@@ -67,6 +69,8 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             _client = new TcpClient();
             await _client.ConnectAsync(_config.Url, _config.Port);
+            _connectionMatcher = ConnectionMatcher.TryCreate(_client.Client.LocalEndPoint, _client.Client.RemoteEndPoint);
+
             Stream rawStream = _client.GetStream();
             if (_config.UseSSL)
             {
@@ -138,6 +142,7 @@ namespace Serilog.Sinks.Datadog.Logs
 #endif
             _stream = null;
             _client = null;
+            _connectionMatcher = null;
         }
 
         private bool IsConnectionClosed()
@@ -161,13 +166,18 @@ namespace Serilog.Sinks.Datadog.Logs
                 // Happen when using Mono on MacOs. Keep the same behavior as before.
                 return false;
             }
-            var currentConnection = connections.FirstOrDefault(
-                c => c.LocalEndPoint.Equals(_client.Client.LocalEndPoint)
-                    && c.RemoteEndPoint.Equals(_client.Client.RemoteEndPoint));
-            if (currentConnection == null || currentConnection.State != TcpState.Established)
+
+            if (_connectionMatcher != null)
             {
-                SelfLog.WriteLine("TCP connection not established. Current state: {0}", currentConnection?.State);
-                return true;
+                var currentConnection = connections.FirstOrDefault(
+                    c => _connectionMatcher.IsSameConnection(c.LocalEndPoint, c.RemoteEndPoint));
+
+                if (currentConnection == null || currentConnection.State != TcpState.Established)
+                {
+                    SelfLog.WriteLine("TCP connection not established. Current state: {0}", currentConnection?.State);
+
+                    return true;
+                }
             }
             return false;
 #endif
@@ -189,6 +199,45 @@ namespace Serilog.Sinks.Datadog.Logs
                     SelfLog.WriteLine("Could not flush the remaining data: {0}", e);
                 }
                 CloseConnection();
+            }
+        }
+
+        private class ConnectionMatcher
+        {
+            readonly private IPEndPoint _localIPv4;
+            readonly private IPEndPoint _localIPv6;
+            readonly private IPEndPoint _remoteIPv4;
+            readonly private IPEndPoint _remoteIPv6;
+
+            public static ConnectionMatcher TryCreate(EndPoint local, EndPoint remote)
+            {
+                if (local is IPEndPoint localIp && remote is IPEndPoint remoteIp)
+                {
+                    return new ConnectionMatcher(
+                        new IPEndPoint(localIp.Address.MapToIPv4(), localIp.Port),
+                        new IPEndPoint(localIp.Address.MapToIPv6(), localIp.Port),
+                        new IPEndPoint(remoteIp.Address.MapToIPv4(), remoteIp.Port),
+                        new IPEndPoint(remoteIp.Address.MapToIPv6(), remoteIp.Port));
+                }
+                return null;
+            }
+
+            public bool IsSameConnection(EndPoint local, EndPoint remote)
+            {
+                return (_localIPv4.Equals(local) || _localIPv6.Equals(local))
+                && (_remoteIPv4.Equals(remote) || _remoteIPv6.Equals(remote));
+            }
+
+            private ConnectionMatcher(
+                IPEndPoint localIPv4,
+                IPEndPoint localIPv6,
+                IPEndPoint remoteIPv4,
+                IPEndPoint remoteIPv6)
+            {
+                _localIPv4 = localIPv4;
+                _localIPv6 = localIPv6;
+                _remoteIPv4 = remoteIPv4;
+                _remoteIPv6 = remoteIPv6;
             }
         }
     }
