@@ -26,6 +26,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly DatadogConfiguration _config;
         private readonly LogFormatter _formatter;
         private readonly string _apiKey;
+        private readonly bool _detectTCPDisconnection;
         private TcpClient _client;
         private Stream _stream;
         private ConnectionMatcher _connectionMatcher;
@@ -55,11 +56,12 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
 
-        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey)
+        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection)
         {
             _config = config;
             _formatter = formatter;
             _apiKey = apiKey;
+            _detectTCPDisconnection = detectTCPDisconnection;
         }
 
         /// <summary>
@@ -151,36 +153,36 @@ namespace Serilog.Sinks.Datadog.Logs
             {
                 return true;
             }
-
-#if NETSTANDARD1_3
-            // `IPGlobalProperties` does not exist, keep the same behavior as before.
-            return false;
-#else
-            TcpConnectionInformation[] connections = null;
-            try
+            if (_detectTCPDisconnection)
             {
-                connections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
-            }
-            catch (NotImplementedException)
-            {
-                // Happen when using Mono on MacOs. Keep the same behavior as before.
-                return false;
-            }
-
-            if (_connectionMatcher != null)
-            {
-                var currentConnection = connections.FirstOrDefault(
-                    c => _connectionMatcher.IsSameConnection(c.LocalEndPoint, c.RemoteEndPoint));
-
-                if (currentConnection == null || currentConnection.State != TcpState.Established)
+                // `IPGlobalProperties` does not exist in NetStandard 1.3, keep the same behavior as before.
+#if !NETSTANDARD1_3
+                TcpConnectionInformation[] connections = null;
+                try
                 {
-                    SelfLog.WriteLine("TCP connection not established. Current state: {0}", currentConnection?.State);
-
-                    return true;
+                    connections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
                 }
+                catch (NotImplementedException)
+                {
+                    // Happen when using Mono on MacOs. Keep the same behavior as before.
+                    return false;
+                }
+
+                if (_connectionMatcher != null)
+                {
+                    var currentConnection = connections.FirstOrDefault(
+                        c => _connectionMatcher.IsSameConnection(c.LocalEndPoint, c.RemoteEndPoint));
+
+                    if (currentConnection == null || currentConnection.State != TcpState.Established)
+                    {
+                        SelfLog.WriteLine("TCP connection not established. Current state: {0}", currentConnection?.State);
+
+                        return true;
+                    }
+                }
+#endif
             }
             return false;
-#endif
         }
 
         /// <summary>
@@ -200,6 +202,6 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
                 CloseConnection();
             }
-        }        
+        }
     }
 }
