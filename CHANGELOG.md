@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.5
+
+* Handle TCP disconnection leading to missing logs #64. Thanks @lokalan.
+
 ## 0.3.4
 
 * Add more net framework targets to solve incompatibility issues with NuGet version resolving to "nearest" .net framework vs compiler targets
