@@ -36,6 +36,7 @@ namespace Serilog
         /// </param>
         /// <param name="exceptionHandler">This function is called when an exception occurs when using 
         /// DatadogConfiguration.UseTCP=false (the default configuration)</param>
+        /// <param name="detectTCPDisconnection">Detect when the TCP connection is lost and recreate a new connection.</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
