@@ -5,6 +5,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -12,6 +13,8 @@ using System.Text;
 using Serilog.Debugging;
 using System.Collections.Generic;
 using Serilog.Events;
+using System.Net.NetworkInformation;
+using System.Net;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -23,8 +26,10 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly DatadogConfiguration _config;
         private readonly LogFormatter _formatter;
         private readonly string _apiKey;
+        private readonly bool _detectTCPDisconnection;
         private TcpClient _client;
         private Stream _stream;
+        private ConnectionMatcher _connectionMatcher;
 
         /// <summary>
         /// API Key / message-content delimiter.
@@ -51,11 +56,12 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
 
-        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey)
+        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection)
         {
             _config = config;
             _formatter = formatter;
             _apiKey = apiKey;
+            _detectTCPDisconnection = detectTCPDisconnection;
         }
 
         /// <summary>
@@ -65,6 +71,8 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             _client = new TcpClient();
             await _client.ConnectAsync(_config.Url, _config.Port);
+            _connectionMatcher = ConnectionMatcher.TryCreate(_client.Client.LocalEndPoint, _client.Client.RemoteEndPoint);
+
             Stream rawStream = _client.GetStream();
             if (_config.UseSSL)
             {
@@ -136,11 +144,45 @@ namespace Serilog.Sinks.Datadog.Logs
 #endif
             _stream = null;
             _client = null;
+            _connectionMatcher = null;
         }
 
         private bool IsConnectionClosed()
         {
-            return _client == null || _stream == null;
+            if (_client == null || _stream == null)
+            {
+                return true;
+            }
+            if (_detectTCPDisconnection)
+            {
+                // `IPGlobalProperties` does not exist in NetStandard 1.3, keep the same behavior as before.
+#if !NETSTANDARD1_3
+                TcpConnectionInformation[] connections = null;
+                try
+                {
+                    connections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
+                }
+                catch (NotImplementedException)
+                {
+                    // Happen when using Mono on MacOs. Keep the same behavior as before.
+                    return false;
+                }
+
+                if (_connectionMatcher != null)
+                {
+                    var currentConnection = connections.FirstOrDefault(
+                        c => _connectionMatcher.IsSameConnection(c.LocalEndPoint, c.RemoteEndPoint));
+
+                    if (currentConnection == null || currentConnection.State != TcpState.Established)
+                    {
+                        SelfLog.WriteLine("TCP connection not established. Current state: {0}", currentConnection?.State);
+
+                        return true;
+                    }
+                }
+#endif
+            }
+            return false;
         }
 
         /// <summary>

@@ -36,6 +36,7 @@ namespace Serilog
         /// </param>
         /// <param name="exceptionHandler">This function is called when an exception occurs when using 
         /// DatadogConfiguration.UseTCP=false (the default configuration)</param>
+        /// <param name="detectTCPDisconnection">Detect when the TCP connection is lost and recreate a new connection.</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
@@ -51,7 +52,8 @@ namespace Serilog
             int? batchSizeLimit = null,
             TimeSpan? batchPeriod = null,
             int? queueLimit = null,
-            Action<Exception> exceptionHandler = null)
+            Action<Exception> exceptionHandler = null,
+            bool detectTCPDisconnection = false)
         {
             if (loggerConfiguration == null)
             {
@@ -63,7 +65,7 @@ namespace Serilog
             }
 
             var config = ApplyMicrosoftExtensionsConfiguration.ConfigureDatadogConfiguration(configuration, configurationSection);
-            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler);
+            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection);
 
             return loggerConfiguration.Sink(sink, logLevel);
         }
