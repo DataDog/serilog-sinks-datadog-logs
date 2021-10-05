@@ -34,11 +34,6 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int MaxBackoff = 30;
 
-        /// <summary>
-        /// Shared UTF8 encoder.
-        /// </summary>
-        private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
-
         public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey)
         {
             _config = config;
