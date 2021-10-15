@@ -41,7 +41,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _config = config;
             _client = new HttpClient();
             _client.DefaultRequestHeaders.Add("DD-API-KEY", apiKey);
-            _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "SerilogDatadog");
+            _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", _version);
             _url = $"{config.Url}/api/v2/logs";
             _formatter = formatter;
