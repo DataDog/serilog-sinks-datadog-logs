@@ -128,6 +128,7 @@ namespace Serilog.Sinks.Datadog.Logs
                     var result = await _client.PostAsync(_url, content);
                     if (result == null) { continue; }
                     if ((int)result.StatusCode >= 500) { continue; }
+                    if ((int)result.StatusCode == 429) { continue; }
                     if ((int)result.StatusCode >= 400) { break; }
                     if (result.IsSuccessStatusCode) { return; }
                 }
