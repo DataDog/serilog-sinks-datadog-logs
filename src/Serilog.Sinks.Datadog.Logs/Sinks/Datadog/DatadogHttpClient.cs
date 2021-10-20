@@ -15,6 +15,8 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogHttpClient : IDatadogClient
     {
+
+        private const string _version = "0.3.5";
         private const string _content = "application/json";
         private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
         private const int _maxMessageSize = 256 * 1024;
@@ -38,7 +40,10 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             _config = config;
             _client = new HttpClient();
-            _url = $"{config.Url}/v1/input/{apiKey}";
+            _client.DefaultRequestHeaders.Add("DD-API-KEY", apiKey);
+            _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");
+            _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", _version);
+            _url = $"{config.Url}/api/v2/logs";
             _formatter = formatter;
         }
 
@@ -123,6 +128,7 @@ namespace Serilog.Sinks.Datadog.Logs
                     var result = await _client.PostAsync(_url, content);
                     if (result == null) { continue; }
                     if ((int)result.StatusCode >= 500) { continue; }
+                    if ((int)result.StatusCode == 429) { continue; }
                     if ((int)result.StatusCode >= 400) { break; }
                     if (result.IsSuccessStatusCode) { return; }
                 }
