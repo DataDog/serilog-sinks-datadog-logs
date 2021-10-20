@@ -45,20 +45,23 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public bool UseTCP { get; set; }
 
+        /// <summary>
+        /// Number of retries before the client gives up logging.
+        /// </summary>
+        public int MaxRetries { get; set; }
+
         public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {
         }
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false, int maxRetries = 10)
         {
             Url = url;
             Port = port;
             UseSSL = useSSL;
             UseTCP = useTCP;
+            MaxRetries = maxRetries;
         }
 
-        public override string ToString()
-        {
-            return string.Format("{{ Url: {0}, Port: {1}, UseSSL: {2}, UseTCP: {3} }}", Url, Port, UseSSL, UseTCP);
-        }
+        public override string ToString() => $"{{ Url: {Url}, Port: {Port}, UseSSL: {UseSSL}, UseTCP: {UseTCP} }}";
     }
 }
