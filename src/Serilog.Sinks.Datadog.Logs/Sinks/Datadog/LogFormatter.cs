@@ -6,12 +6,12 @@
 using System.Text;
 using System.IO;
 using System.Collections.Generic;
-
 using Serilog.Events;
 using Serilog.Formatting.Json;
 #if NET5_0_OR_GREATER
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Encodings.Web;
 #else
 using Newtonsoft.Json;
 #endif
@@ -39,7 +39,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Settings to drop null values.
         /// </summary>
-        private static readonly JsonSerializerOptions settings = new JsonSerializerOptions { WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull};
+        private static readonly JsonSerializerOptions settings = new JsonSerializerOptions { WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping};
 #else
 
         /// <summary>
