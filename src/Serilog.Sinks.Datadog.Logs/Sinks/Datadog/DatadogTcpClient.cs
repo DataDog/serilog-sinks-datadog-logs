@@ -35,12 +35,12 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// API Key / message-content delimiter.
         /// </summary>
-        private const string WhiteSpace = " ";
+        private const char WhiteSpace = ' ';
 
         /// <summary>
         /// Message delimiter.
         /// </summary>
-        private const string MessageDelimiter = "\n";
+        private const char MessageDelimiter = '\n';
 
         /// <summary>
         /// Max number of retries when sending failed.
@@ -97,8 +97,8 @@ namespace Serilog.Sinks.Datadog.Logs
             var payloadBuilder = new StringBuilder();
             foreach (var logEvent in events)
             {
-                payloadBuilder.Append(_apiKey + WhiteSpace);
-                payloadBuilder.Append(_formatter.FormatMessage(logEvent));
+                payloadBuilder.Append(_apiKey).Append(WhiteSpace);
+                payloadBuilder.Append(_formatter.formatMessage(logEvent));
                 payloadBuilder.Append(MessageDelimiter);
             }
             var payload = payloadBuilder.ToString();
