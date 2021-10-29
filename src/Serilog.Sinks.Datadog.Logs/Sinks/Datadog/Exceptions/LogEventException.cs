@@ -11,12 +11,12 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     public class LogEventException : Exception
     {
-        public LogEventException(string message, IEnumerable<LogEvent> logEvents)
+        public LogEventException(string message, IReadOnlyCollection<LogEvent> logEvents)
             : base(message)
         {
             LogEvents = logEvents;
         }
 
-        public IEnumerable<LogEvent> LogEvents { get; }
+        public IReadOnlyCollection<LogEvent> LogEvents { get; }
     }
 }

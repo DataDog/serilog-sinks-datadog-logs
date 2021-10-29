@@ -10,8 +10,13 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     public class TooBigLogEventException : LogEventException
     {
-        public TooBigLogEventException(IEnumerable<LogEvent> logEvents)
+        public TooBigLogEventException(IReadOnlyCollection<LogEvent> logEvents)
             : base($"The LogEvent instances are too big to be sent.", logEvents)
+        {
+        }
+
+        public TooBigLogEventException(LogEvent logEvent)
+            : base($"The LogEvent instance is too big to be sent.", new[] { logEvent })
         {
         }
     }

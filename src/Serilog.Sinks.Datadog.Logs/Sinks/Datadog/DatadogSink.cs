@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Serilog.Debugging;
 using Serilog.Events;
@@ -26,6 +27,9 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly TimeSpan DefaultBatchPeriod = TimeSpan.FromSeconds(2);
 
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationToken _cancellationToken;
+
         /// <summary>
         /// The maximum number of events to emit in a single batch.
         /// </summary>
@@ -34,15 +38,20 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod)
         {
-            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection);
+            _cancellationTokenSource = new CancellationTokenSource();
+            _cancellationToken = _cancellationTokenSource.Token;
+            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection, _cancellationToken);
             _exceptionHandler = exceptionHandler;
         }
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int queueLimit, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod, queueLimit)
         {
-            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection);
+            _cancellationTokenSource = new CancellationTokenSource();
+            _cancellationToken = _cancellationTokenSource.Token;
+            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection, _cancellationToken);
             _exceptionHandler = exceptionHandler;
+           
         }
 
         public static DatadogSink Create(
@@ -72,13 +81,12 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             try
             {
-                if (!events.Any())
+                var logEvents = events.ToArray();
+                if (logEvents.Length == 0)
                 {
                     return;
                 }
-
-                var task = _client.WriteAsync(events);
-                await RunTask(task);
+                await _client.WriteAsync(logEvents, _exceptionHandler).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -93,11 +101,19 @@ namespace Serilog.Sinks.Datadog.Logs
         /// the object is being disposed from the finalizer.</param>
         protected override void Dispose(bool disposing)
         {
+            _cancellationTokenSource.Cancel();
             _client.Close();
             base.Dispose(disposing);
         }
 
-        private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration configuration, bool detectTCPDisconnection)
+        private static IDatadogClient CreateDatadogClient(string apiKey,
+            string source,
+            string service,
+            string host,
+            string[] tags,
+            DatadogConfiguration configuration,
+            bool detectTCPDisconnection,
+            CancellationToken cancellationToken)
         {
             var logFormatter = new LogFormatter(source, service, host, tags);
             if (configuration.UseTCP)
@@ -106,29 +122,7 @@ namespace Serilog.Sinks.Datadog.Logs
             }
             else
             {
-                return new DatadogHttpClient(configuration, logFormatter, apiKey);
-            }
-        }
-
-        private async Task RunTask(Task task)
-        {
-            try
-            {
-                await task.ConfigureAwait(false);
-            }
-            catch
-            {
-                if (task?.Exception != null)
-                {
-                    foreach (var innerException in task.Exception.InnerExceptions)
-                    {
-                        OnException(innerException);
-                    }
-                }
-                else
-                {
-                    throw;
-                }
+                return new DatadogHttpClient(configuration, logFormatter, apiKey, cancellationToken);
             }
         }
 

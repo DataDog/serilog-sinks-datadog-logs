@@ -5,12 +5,13 @@
 
 using Serilog.Events;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
     public class CannotSendLogEventException : LogEventException
     {
-        public CannotSendLogEventException(string payload, IEnumerable<LogEvent> logEvents)
+        public CannotSendLogEventException(string payload, IReadOnlyCollection<LogEvent> logEvents)
             : base($"Could not send payload to Datadog: {payload}", logEvents)
         {
         }
