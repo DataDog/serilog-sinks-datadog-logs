@@ -15,13 +15,14 @@ using System.Collections.Generic;
 using Serilog.Events;
 using System.Net.NetworkInformation;
 using System.Net;
+using System.Threading;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
     /// <summary>
     /// TCP Client that forwards log events to Datadog.
     /// </summary>
-    public class DatadogTcpClient : IDatadogClient
+    public sealed class DatadogTcpClient : IDatadogClient
     {
         private readonly DatadogConfiguration _config;
         private readonly LogFormatter _formatter;
@@ -56,8 +57,13 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
 
-        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection)
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationToken _cancellationToken;
+
+        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection, CancellationToken token)
         {
+            _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+            _cancellationToken = _cancellationTokenSource.Token;
             _config = config;
             _formatter = formatter;
             _apiKey = apiKey;
@@ -70,14 +76,14 @@ namespace Serilog.Sinks.Datadog.Logs
         private async Task ConnectAsync()
         {
             _client = new TcpClient();
-            await _client.ConnectAsync(_config.Url, _config.Port);
+            await _client.ConnectAsync(_config.Url, _config.Port).ConfigureAwait(false);
             _connectionMatcher = ConnectionMatcher.TryCreate(_client.Client.LocalEndPoint, _client.Client.RemoteEndPoint);
 
             Stream rawStream = _client.GetStream();
             if (_config.UseSSL)
             {
                 SslStream secureStream = new SslStream(rawStream);
-                await secureStream.AuthenticateAsClientAsync(_config.Url);
+                await secureStream.AuthenticateAsClientAsync(_config.Url).ConfigureAwait(false);
                 _stream = secureStream;
             }
             else
@@ -86,7 +92,7 @@ namespace Serilog.Sinks.Datadog.Logs
             }
         }
 
-        public async Task WriteAsync(IEnumerable<LogEvent> events)
+        public async Task WriteAsync(LogEvent[] events, Action<Exception> onException)
         {
             var payloadBuilder = new StringBuilder();
             foreach (var logEvent in events)
@@ -95,21 +101,21 @@ namespace Serilog.Sinks.Datadog.Logs
                 payloadBuilder.Append(_formatter.FormatMessage(logEvent));
                 payloadBuilder.Append(MessageDelimiter);
             }
-            string payload = payloadBuilder.ToString();
+            var payload = payloadBuilder.ToString();
 
             for (int retry = 0; retry < MaxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(retry, 2), MaxBackoff);
                 if (retry > 0)
                 {
-                    await Task.Delay(backoff * 1000);
+                    await Task.Delay(backoff * 1000, _cancellationToken).ConfigureAwait(false);
                 }
 
                 if (IsConnectionClosed())
                 {
                     try
                     {
-                        await ConnectAsync();
+                        await ConnectAsync().ConfigureAwait(false);
                     }
                     catch (Exception e)
                     {
@@ -121,7 +127,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 try
                 {
                     byte[] data = UTF8.GetBytes(payload);
-                    _stream.Write(data, 0, data.Length);
+                    await _stream.WriteAsync(data, 0, data.Length, _cancellationToken).ConfigureAwait(false);
                     return;
                 }
                 catch (Exception e)
@@ -202,6 +208,11 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
                 CloseConnection();
             }
+        }
+
+        public void Dispose()
+        {
+            Close();
         }
     }
 }
