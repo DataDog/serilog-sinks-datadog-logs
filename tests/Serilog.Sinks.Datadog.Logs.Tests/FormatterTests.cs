@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime;
 using NUnit.Framework;
-using Serilog.Events;
 
 namespace Serilog.Sinks.Datadog.Logs.Tests
 {
@@ -12,21 +10,31 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         [Test]
         public void CanFormat()
         {
-            var exception = new Exception("Top", new Exception("Middle", new ApplicationException("Bottom")));
-            var properties = new[]
+        #if NET5_0_OR_GREATER
+            var ver = Environment.Version.ToString();
+        #else
+            var ver = AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
+        #endif
+            const string apiKey = "NOT_AN_API_KEY";
+            var config = new DatadogConfiguration();
+            var logFormatter = new LogFormatter(ver, "TEST", "localhost", new[] { "the", "coolest", "test" });
+            var noop = new NoopClient(apiKey, logFormatter);
+            using (var log = new LoggerConfiguration().WriteTo.DatadogLogs(apiKey, configuration: config, client: noop).CreateLogger())
             {
-                new LogEventProperty("A", new ScalarValue(1)), new LogEventProperty("B", new DictionaryValue(new[]
+                var positions = new dynamic[]
                 {
-                    new KeyValuePair<ScalarValue, LogEventPropertyValue>(new ScalarValue(1), new ScalarValue(2))
-                }))
-            };
-
-
-            var logEvent = new LogEvent(DateTimeOffset.UtcNow, LogEventLevel.Information, exception, MessageTemplate.Empty, properties);
-
-            var formatter = new LogFormatter(null, "TEST", "localhost", new[] { "the", "coolest", "test" });
-            var message = formatter.FormatMessage(logEvent);
-            Assert.That(!string.IsNullOrWhiteSpace(message));
+                    new { Latitude = byte.MinValue, Longitude = byte.MaxValue }, 
+                    new { Latitude = short.MinValue, Longitude = short.MaxValue }, 
+                    new { Latitude = int.MinValue, Longitude = int.MaxValue },
+                    new { Latitude = long.MinValue, Longitude = long.MaxValue }
+                };
+                const int elapsedMs = 34;
+                Assert.DoesNotThrow(() => log.Information("Processed {@Positions} in {Elapsed:000} ms.", new Dictionary<string, object>
+                {
+                    { "positions", positions },
+                    { "creator", "ACME" }
+                }, elapsedMs));
+            }
         }
     }
 }

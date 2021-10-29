@@ -2,7 +2,7 @@
 
   <PropertyGroup>
 
-    <TargetFrameworks>net45;net461;net472;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net461;net472;net5.0;net6.0</TargetFrameworks>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Serilog.Sinks.Datadog.Logs.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
