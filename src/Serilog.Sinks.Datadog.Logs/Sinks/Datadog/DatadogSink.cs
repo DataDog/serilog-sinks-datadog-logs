@@ -118,7 +118,7 @@ namespace Serilog.Sinks.Datadog.Logs
             var logFormatter = new LogFormatter(source, service, host, tags);
             if (configuration.UseTCP)
             {
-                return new DatadogTcpClient(configuration, logFormatter, apiKey, detectTCPDisconnection);
+                return new DatadogTcpClient(configuration, logFormatter, apiKey, detectTCPDisconnection, cancellationToken);
             }
             else
             {
