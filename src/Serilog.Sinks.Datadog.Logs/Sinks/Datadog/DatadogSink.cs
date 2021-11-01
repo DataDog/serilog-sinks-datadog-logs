@@ -29,6 +29,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly CancellationToken _cancellationToken;
+        private readonly static SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// The maximum number of events to emit in a single batch.
@@ -51,20 +52,20 @@ namespace Serilog.Sinks.Datadog.Logs
             _cancellationToken = _cancellationTokenSource.Token;
             _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection, _cancellationToken);
             _exceptionHandler = exceptionHandler;
-           
+
         }
 
         public static DatadogSink Create(
-            string apiKey, 
-            string source, 
-            string service, 
-            string host, 
-            string[] tags, 
-            DatadogConfiguration config, 
-            int? batchSizeLimit = null, 
-            TimeSpan? batchPeriod = null, 
-            int? queueLimit = null, 
-            Action<Exception> exceptionHandler = null, 
+            string apiKey,
+            string source,
+            string service,
+            string host,
+            string[] tags,
+            DatadogConfiguration config,
+            int? batchSizeLimit = null,
+            TimeSpan? batchPeriod = null,
+            int? queueLimit = null,
+            Action<Exception> exceptionHandler = null,
             bool detectTCPDisconnection = false, IDatadogClient client = null)
         {
             if (queueLimit.HasValue)
@@ -79,18 +80,30 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <param name="events">The events to emit.</param>
         protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
         {
+            if (_cancellationToken.IsCancellationRequested) {
+                return;
+            }
             try
             {
-                var logEvents = events.ToArray();
-                if (logEvents.Length == 0)
+                if (!events.Any())
                 {
                     return;
                 }
+                await Semaphore.WaitAsync(_cancellationToken);
+                var logEvents = events.ToArray();
                 await _client.WriteAsync(logEvents, _exceptionHandler).ConfigureAwait(false);
-            }
-            catch (Exception e)
+            } catch (Exception e)
             {
-                OnException(e);
+                if (e is OperationCanceledException && events.Any())
+                {
+                    OnException(new LogEventException("Datadog log sink was disposed", events.ToArray()));
+                } else
+                {
+                    OnException(e);
+                }
+            } finally
+            {
+                Semaphore.Release();
             }
         }
 
@@ -101,9 +114,29 @@ namespace Serilog.Sinks.Datadog.Logs
         /// the object is being disposed from the finalizer.</param>
         protected override void Dispose(bool disposing)
         {
-            _cancellationTokenSource.Cancel();
-            _client.Close();
-            base.Dispose(disposing);
+            if (disposing)
+            {
+               // delay the dispose by one batch period so lingering events get logged. 
+               // after that the dispose thread will enter and block any further writes.
+               _ = Task.Delay(DefaultBatchPeriod).ContinueWith(_ => {
+                    try
+                    {
+                        Semaphore.Wait(_cancellationToken);
+                        _cancellationTokenSource.Cancel();
+                        _client.Dispose();
+                        base.Dispose(disposing);
+
+                    } finally
+                    {
+                        Semaphore.Release();
+                        Semaphore.Dispose();
+                        _cancellationTokenSource.Dispose();
+                    }
+                }, CancellationToken.None);
+            } else
+            {
+                
+            }
         }
 
         private static IDatadogClient CreateDatadogClient(string apiKey,
@@ -119,8 +152,7 @@ namespace Serilog.Sinks.Datadog.Logs
             if (configuration.UseTCP)
             {
                 return new DatadogTcpClient(configuration, logFormatter, apiKey, detectTCPDisconnection, cancellationToken);
-            }
-            else
+            } else
             {
                 return new DatadogHttpClient(configuration, logFormatter, apiKey, cancellationToken);
             }

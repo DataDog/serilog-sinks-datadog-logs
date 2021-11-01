@@ -75,6 +75,10 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private async Task ConnectAsync()
         {
+            if (_cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException();
+            }
             _client = new TcpClient();
             await _client.ConnectAsync(_config.Url, _config.Port).ConfigureAwait(false);
             _connectionMatcher = ConnectionMatcher.TryCreate(_client.Client.LocalEndPoint, _client.Client.RemoteEndPoint);
@@ -98,7 +102,7 @@ namespace Serilog.Sinks.Datadog.Logs
             foreach (var logEvent in events)
             {
                 payloadBuilder.Append(_apiKey).Append(WhiteSpace);
-                payloadBuilder.Append(_formatter.formatMessage(logEvent));
+                payloadBuilder.Append(_formatter.FormatMessage(logEvent));
                 payloadBuilder.Append(MessageDelimiter);
             }
             var payload = payloadBuilder.ToString();
@@ -110,6 +114,10 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     await Task.Delay(backoff * 1000, _cancellationToken).ConfigureAwait(false);
                 }
+                if (_cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
 
                 if (IsConnectionClosed())
                 {
@@ -119,7 +127,12 @@ namespace Serilog.Sinks.Datadog.Logs
                     }
                     catch (Exception e)
                     {
+                       
                         SelfLog.WriteLine("Could not connect to Datadog: {0}", e);
+                        if (e is OperationCanceledException)
+                        {
+                            break;
+                        }
                         continue;
                     }
                 }
@@ -196,6 +209,12 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public void Close()
         {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource.Cancel();
             if (!IsConnectionClosed())
             {
                 try
@@ -208,11 +227,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
                 CloseConnection();
             }
-        }
-
-        public void Dispose()
-        {
-            Close();
+            _cancellationTokenSource.Dispose();
         }
     }
 }

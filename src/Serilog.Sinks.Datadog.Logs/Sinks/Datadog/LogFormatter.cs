@@ -8,6 +8,7 @@ using System.IO;
 using System.Collections.Generic;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using System.Threading;
 #if NET5_0_OR_GREATER
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -24,7 +25,8 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly string _service;
         private readonly string _host;
         private readonly string _tags;
-
+        private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
+        private static readonly StringBuilder _payloadBuilder = new StringBuilder(_maxSize, _maxSize);
         /// <summary>
         /// Default source value for the serilog integration.
         /// </summary>
@@ -39,7 +41,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Settings to drop null values.
         /// </summary>
-        private static readonly JsonSerializerOptions settings = new JsonSerializerOptions { WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping};
+        private static readonly JsonSerializerOptions settings = new JsonSerializerOptions { WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 #else
 
         /// <summary>
@@ -61,36 +63,41 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public string FormatMessage(LogEvent logEvent)
         {
-            var payload = new StringBuilder();
-            var writer = new StringWriter(payload);
+            try
+            {
+                var writer = new StringWriter(_payloadBuilder);
 
-            // Serialize the event as JSON. The Serilog formatter handles the
-            // internal structure of the logEvent to give a nicely formatted JSON
-            formatter.Format(logEvent, writer);
+                // Serialize the event as JSON. The Serilog formatter handles the
+                // internal structure of the logEvent to give a nicely formatted JSON
+                formatter.Format(logEvent, writer);
 
-            // Convert the JSON to a dictionnary and add the DataDog properties
+                // Convert the JSON to a dictionnary and add the DataDog properties
 #if NET5_0_OR_GREATER
 
-            var logEventAsDict = JsonSerializer.Deserialize<Dictionary<string, object>>(payload.ToString());
+                    var logEventAsDict = JsonSerializer.Deserialize<Dictionary<string, object>>(_payloadBuilder.ToString());
 #else
-            var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(payload.ToString());
+                var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(_payloadBuilder.ToString());
 #endif
 
-            if (_source != null) { logEventAsDict.Add("ddsource", _source); }
-            if (_service != null) { logEventAsDict.Add("service", _service); }
-            if (_host != null) { logEventAsDict.Add("host", _host); }
-            if (_tags != null) { logEventAsDict.Add("ddtags", _tags); }
+                if (_source != null) { logEventAsDict.Add("ddsource", _source); }
+                if (_service != null) { logEventAsDict.Add("service", _service); }
+                if (_host != null) { logEventAsDict.Add("host", _host); }
+                if (_tags != null) { logEventAsDict.Add("ddtags", _tags); }
 
-            // Rename serilog attributes to Datadog reserved attributes to have them properly
-            // displayed on the Log Explorer
-            RenameKey(logEventAsDict, "RenderedMessage", "message");
-            RenameKey(logEventAsDict, "Level", "level");
-            // Convert back the dict to a JSON string
+                // Rename serilog attributes to Datadog reserved attributes to have them properly
+                // displayed on the Log Explorer
+                RenameKey(logEventAsDict, "RenderedMessage", "message");
+                RenameKey(logEventAsDict, "Level", "level");
+                // Convert back the dict to a JSON string
 #if NET5_0_OR_GREATER
-    return JsonSerializer.Serialize(logEventAsDict, settings);
+                    return JsonSerializer.Serialize(logEventAsDict, settings);
 #else
-            return JsonConvert.SerializeObject(logEventAsDict, settings);
+                return JsonConvert.SerializeObject(logEventAsDict, settings);
 #endif
+            } finally
+            {
+                _payloadBuilder.Clear();
+            }
         }
 
         /// <summary>

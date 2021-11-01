@@ -23,11 +23,12 @@ namespace Serilog.Sinks.Datadog.Logs
         private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
         private const int _maxMessageSize = 256 * 1024;
 
-        private readonly DatadogConfiguration _config;
         private readonly LogFormatter _formatter;
         private readonly HttpClient _client;
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly CancellationToken _cancellationToken;
+        private static readonly StringBuilder _chunkBuilder = new StringBuilder(_maxSize, _maxSize);
+
 
 
         /// <summary>
@@ -44,7 +45,6 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
             _cancellationToken = _cancellationTokenSource.Token;
-            _config = config;
             _client = new HttpClient();
             _client.BaseAddress = new Uri(config.Url);
             _client.DefaultRequestHeaders.Add("DD-API-KEY", apiKey);
@@ -53,57 +53,68 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter = formatter;
         }
 
+        /// <summary>
+        /// Writes the specified <paramref name="events"/> to Datadog logs route. 
+        /// </summary>
+        /// <param name="events">The events that will be sent.</param>
+        /// <param name="onException">The callback that is invoked when an exception occurs in this event but is handled gracefully.</param>
+        /// <remarks>
+        /// <para>This method uses a semaphore so that only one batch of events is ever on the wire at any given time.</para>
+        /// <para>This allows for a single allocated contiguous memory to be written to for serialization of events.</para>
+        /// </remarks>
         public async Task WriteAsync(LogEvent[] events, Action<Exception> onException)
         {
-            var chunkCount = 0;
-            var chunkStart = 0;
-
-            var chunkBuilder = new StringBuilder(_maxSize);
-
-            for (var i = 0; i < events.Length; i++)
+            try
             {
+                var chunkCount = 0;
+                var chunkStart = 0;
 
-                if (_cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-                var formattedLog = _formatter.formatMessage(events[i]);
-                var logSize = Encoding.UTF8.GetMaxByteCount(formattedLog.Length);
-                if (logSize > _maxMessageSize)
+                for (var i = 0; i < events.Length; i++)
                 {
 
-                    if (onException != null)
+                    if (_cancellationToken.IsCancellationRequested)
                     {
-                        onException(new TooBigLogEventException(events[i]));
+                        break;
                     }
-                    continue; // The log is dropped because the backend would not accept it
-                }
+                    var formattedLog = _formatter.FormatMessage(events[i]);
+                    var logSize = Encoding.UTF8.GetMaxByteCount(formattedLog.Length);
+                    if (logSize > _maxMessageSize)
+                    {
+                        if (onException != null)
+                        {
+                            onException(new TooBigLogEventException(events[i]));
+                        }
+                        continue; // The log is dropped because the backend would not accept it
+                    }
 
-                if ((chunkBuilder.Length + logSize) > _maxSize)
+                    if ((_chunkBuilder.Length + logSize) > _maxSize)
+                    {
+                        await PostChunk().ConfigureAwait(false);
+                        // Flush the chunkBuffer to the chunks and reset the chunkBuffer
+                        _chunkBuilder.Clear();
+                        chunkCount = 0;
+                        chunkStart = i;
+                    }
+                    // if the builder is empty write the prefix, otherwise write the delimiter
+                    _chunkBuilder.Append(_chunkBuilder.Length == 0 ? '[' : ',');
+                    // now write our formatted log
+                    _chunkBuilder.Append(formattedLog);
+                    chunkCount++;
+                }
+                if (_chunkBuilder.Length != 0)
                 {
                     await PostChunk().ConfigureAwait(false);
-                    // Flush the chunkBuffer to the chunks and reset the chunkBuffer
-                    chunkBuilder.Clear();
-                    chunkCount = 0;
-                    chunkStart = i;
                 }
-                // if the builder is empty write the prefix, otherwise write the delimiter
-                chunkBuilder.Append(chunkBuilder.Length == 0 ? '[' : ',');
-                // now write our formatted log
-                chunkBuilder.Append(formattedLog);
-                chunkCount++;
-            }
-            if (chunkBuilder.Length != 0)
-            {
-                await PostChunk().ConfigureAwait(false);
-                chunkBuilder.Clear();
-            }
 
-            async Task PostChunk()
+                async Task PostChunk()
+                {
+                    var payload = _chunkBuilder.Append(']').ToString();
+                    var eventSegment = new ArraySegment<LogEvent>(events, chunkStart, chunkCount);
+                    await Post(payload, eventSegment, onException).ConfigureAwait(false);
+                }
+            } finally
             {
-                var payload = chunkBuilder.Append(']').ToString();
-                var eventSegment = new ArraySegment<LogEvent>(events, chunkStart, chunkCount);
-                await Post(payload, eventSegment, onException).ConfigureAwait(false);
+                _chunkBuilder.Clear();
             }
         }
 
@@ -111,11 +122,14 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             if (!_cancellationToken.IsCancellationRequested)
             {
-     
                 using (var content = new StringContent(payload, Encoding.UTF8, _content))
                 {
                     for (var retry = 0; retry < MaxRetries; retry++)
                     {
+                        if (_cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
                         var backoff = (int)Math.Min(Math.Pow(2, retry), MaxBackoff);
                         if (retry > 0)
                         {
@@ -132,8 +146,7 @@ namespace Serilog.Sinks.Datadog.Logs
                                 if ((int)result.StatusCode >= 400) { break; }
                                 if (result.IsSuccessStatusCode) { return; }
                             }
-                        }
-                        catch
+                        } catch
                         {
                             // ignored
                         }
@@ -150,16 +163,17 @@ namespace Serilog.Sinks.Datadog.Logs
 
         void IDatadogClient.Close()
         {
-            _cancellationTokenSource.Cancel();
             Dispose();
         }
 
         public void Dispose()
         {
+              _cancellationTokenSource.Cancel();
             if (_client != null)
             {
                 _client.Dispose();
             }
+            _cancellationTokenSource.Dispose();
         }
     }
 }

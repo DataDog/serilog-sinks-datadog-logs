@@ -21,7 +21,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             _formatter = formatter;
         }
 
-        public Task WriteAsync(IEnumerable<LogEvent> events)
+        public Task WriteAsync(IEnumerable<LogEvent> events, Action<Exception> onException)
         {
 
 
@@ -47,6 +47,11 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         public void Close()
         {
 
+        }
+
+        public void Dispose()
+        {
+            
         }
     }
 }
