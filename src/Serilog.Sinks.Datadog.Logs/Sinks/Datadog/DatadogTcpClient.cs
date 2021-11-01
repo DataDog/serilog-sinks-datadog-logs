@@ -89,8 +89,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 SslStream secureStream = new SslStream(rawStream);
                 await secureStream.AuthenticateAsClientAsync(_config.Url).ConfigureAwait(false);
                 _stream = secureStream;
-            }
-            else
+            } else
             {
                 _stream = rawStream;
             }
@@ -124,10 +123,9 @@ namespace Serilog.Sinks.Datadog.Logs
                     try
                     {
                         await ConnectAsync().ConfigureAwait(false);
-                    }
-                    catch (Exception e)
+                    } catch (Exception e)
                     {
-                       
+
                         SelfLog.WriteLine("Could not connect to Datadog: {0}", e);
                         if (e is OperationCanceledException)
                         {
@@ -142,8 +140,7 @@ namespace Serilog.Sinks.Datadog.Logs
                     byte[] data = UTF8.GetBytes(payload);
                     await _stream.WriteAsync(data, 0, data.Length, _cancellationToken).ConfigureAwait(false);
                     return;
-                }
-                catch (Exception e)
+                } catch (Exception e)
                 {
                     CloseConnection();
                     SelfLog.WriteLine("Could not send data to Datadog: {0}", e);
@@ -180,8 +177,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 try
                 {
                     connections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
-                }
-                catch (NotImplementedException)
+                } catch (NotImplementedException)
                 {
                     // Happen when using Mono on MacOs. Keep the same behavior as before.
                     return false;
@@ -220,8 +216,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 try
                 {
                     _stream.Flush();
-                }
-                catch (Exception e)
+                } catch (Exception e)
                 {
                     SelfLog.WriteLine("Could not flush the remaining data: {0}", e);
                 }

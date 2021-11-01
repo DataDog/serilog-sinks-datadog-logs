@@ -83,7 +83,8 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </remarks>
         protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
         {
-            if (_cancellationToken.IsCancellationRequested) {
+            if (_cancellationToken.IsCancellationRequested)
+            {
                 return;
             }
             try
@@ -119,9 +120,9 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             if (disposing)
             {
-               // delay the dispose by one batch period so lingering events get logged. 
-               // after that the dispose thread will enter and block any further writes.
-               _ = Task.Delay(DefaultBatchPeriod).ContinueWith(_ => {
+                // delay the dispose by one batch period so lingering events get logged. 
+                // after that the dispose thread will enter and block any further writes.
+                _ = Task.Delay(DefaultBatchPeriod).ContinueWith(_ => {
                     try
                     {
                         Semaphore.Wait(_cancellationToken);

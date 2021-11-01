@@ -74,7 +74,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 // Convert the JSON to a dictionnary and add the DataDog properties
 #if NET5_0_OR_GREATER
 
-                    var logEventAsDict = JsonSerializer.Deserialize<Dictionary<string, object>>(_payloadBuilder.ToString());
+                var logEventAsDict = JsonSerializer.Deserialize<Dictionary<string, object>>(_payloadBuilder.ToString());
 #else
                 var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(_payloadBuilder.ToString());
 #endif
@@ -90,7 +90,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 RenameKey(logEventAsDict, "Level", "level");
                 // Convert back the dict to a JSON string
 #if NET5_0_OR_GREATER
-                    return JsonSerializer.Serialize(logEventAsDict, settings);
+                return JsonSerializer.Serialize(logEventAsDict, settings);
 #else
                 return JsonConvert.SerializeObject(logEventAsDict, settings);
 #endif

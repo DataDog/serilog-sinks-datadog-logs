@@ -168,7 +168,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public void Dispose()
         {
-              _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Cancel();
             if (_client != null)
             {
                 _client.Dispose();
