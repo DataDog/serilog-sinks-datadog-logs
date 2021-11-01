@@ -8,7 +8,14 @@ using System.IO;
 using System.Collections.Generic;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+#if NET5_0_OR_GREATER
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Encodings.Web;
+#else
 using Newtonsoft.Json;
+#endif
+
 namespace Serilog.Sinks.Datadog.Logs
 {
     public class LogFormatter
@@ -28,10 +35,18 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly JsonFormatter formatter = new JsonFormatter(renderMessage: true);
 
+#if NET5_0_OR_GREATER
         /// <summary>
         /// Settings to drop null values.
         /// </summary>
-        private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+        private static readonly JsonSerializerOptions settings = new JsonSerializerOptions { WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping};
+#else
+
+        /// <summary>
+        /// Settings to drop null values.
+        /// </summary>
+        private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, Formatting = Newtonsoft.Json.Formatting.None };
+#endif
 
         public LogFormatter(string source, string service, string host, string[] tags)
         {
@@ -44,7 +59,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// formatMessage enrich the log event with DataDog metadata such as source, service, host and tags.
         /// </summary>
-        public string formatMessage(LogEvent logEvent)
+        public string FormatMessage(LogEvent logEvent)
         {
             var payload = new StringBuilder();
             var writer = new StringWriter(payload);
@@ -54,9 +69,15 @@ namespace Serilog.Sinks.Datadog.Logs
             formatter.Format(logEvent, writer);
 
             // Convert the JSON to a dictionnary and add the DataDog properties
-            var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(payload.ToString());
+#if NET5_0_OR_GREATER
+
+            var logEventAsDict = JsonSerializer.Deserialize<Dictionary<string, object>>(payload.ToString());
+#else
+            var logEventAsDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(payload.ToString());
+#endif
+
             if (_source != null) { logEventAsDict.Add("ddsource", _source); }
-            if (_service != null) { logEventAsDict.Add("service",_service); }
+            if (_service != null) { logEventAsDict.Add("service", _service); }
             if (_host != null) { logEventAsDict.Add("host", _host); }
             if (_tags != null) { logEventAsDict.Add("ddtags", _tags); }
 
@@ -64,9 +85,12 @@ namespace Serilog.Sinks.Datadog.Logs
             // displayed on the Log Explorer
             RenameKey(logEventAsDict, "RenderedMessage", "message");
             RenameKey(logEventAsDict, "Level", "level");
-
             // Convert back the dict to a JSON string
-            return JsonConvert.SerializeObject(logEventAsDict, Newtonsoft.Json.Formatting.None, settings);
+#if NET5_0_OR_GREATER
+    return JsonSerializer.Serialize(logEventAsDict, settings);
+#else
+            return JsonConvert.SerializeObject(logEventAsDict, settings);
+#endif
         }
 
         /// <summary>

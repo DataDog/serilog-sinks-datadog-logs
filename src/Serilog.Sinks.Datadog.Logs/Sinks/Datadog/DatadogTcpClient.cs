@@ -92,7 +92,7 @@ namespace Serilog.Sinks.Datadog.Logs
             foreach (var logEvent in events)
             {
                 payloadBuilder.Append(_apiKey + WhiteSpace);
-                payloadBuilder.Append(_formatter.formatMessage(logEvent));
+                payloadBuilder.Append(_formatter.FormatMessage(logEvent));
                 payloadBuilder.Append(MessageDelimiter);
             }
             string payload = payloadBuilder.ToString();
