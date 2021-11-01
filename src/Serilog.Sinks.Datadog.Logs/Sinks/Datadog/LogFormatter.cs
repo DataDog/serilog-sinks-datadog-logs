@@ -48,7 +48,8 @@ namespace Serilog.Sinks.Datadog.Logs
         private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, Formatting = Newtonsoft.Json.Formatting.None };
 #endif
 
-        public LogFormatter(string source, string service, string host, string[] tags) {
+        public LogFormatter(string source, string service, string host, string[] tags)
+        {
             _source = source ?? CSHARP;
             _service = service;
             _host = host;
@@ -58,7 +59,8 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// formatMessage enrich the log event with DataDog metadata such as source, service, host and tags.
         /// </summary>
-        public string FormatMessage(LogEvent logEvent) {
+        public string FormatMessage(LogEvent logEvent)
+        {
             var payload = new StringBuilder();
             var writer = new StringWriter(payload);
 
@@ -95,8 +97,10 @@ namespace Serilog.Sinks.Datadog.Logs
         /// Renames a key in a dictionary.
         /// </summary>
         private void RenameKey<TKey, TValue>(IDictionary<TKey, TValue> dict,
-                                           TKey oldKey, TKey newKey) {
-            if (dict.TryGetValue(oldKey, out TValue value)) {
+                                           TKey oldKey, TKey newKey)
+        {
+            if (dict.TryGetValue(oldKey, out TValue value))
+            {
                 dict.Remove(oldKey);
                 dict.Add(newKey, value);
             }

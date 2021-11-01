@@ -10,11 +10,11 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         [Test]
         public void CanFormat()
         {
-        #if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER
             var ver = Environment.Version.ToString();
-        #else
+#else
             var ver = AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
-        #endif
+#endif
             const string apiKey = "NOT_AN_API_KEY";
             var config = new DatadogConfiguration();
             var logFormatter = new LogFormatter(ver, "TEST", "localhost", new[] { "the", "coolest", "test" });
@@ -23,8 +23,8 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             {
                 var positions = new dynamic[]
                 {
-                    new { Latitude = byte.MinValue, Longitude = byte.MaxValue }, 
-                    new { Latitude = short.MinValue, Longitude = short.MaxValue }, 
+                    new { Latitude = byte.MinValue, Longitude = byte.MaxValue },
+                    new { Latitude = short.MinValue, Longitude = short.MaxValue },
                     new { Latitude = int.MinValue, Longitude = int.MaxValue },
                     new { Latitude = long.MinValue, Longitude = long.MaxValue }
                 };

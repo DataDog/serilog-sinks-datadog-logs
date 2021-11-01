@@ -15,18 +15,21 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         private readonly string _apiKey;
         private readonly LogFormatter _formatter;
 
-        public NoopClient(string apiKey, LogFormatter formatter) {
+        public NoopClient(string apiKey, LogFormatter formatter)
+        {
             _apiKey = apiKey;
             _formatter = formatter;
         }
 
-        public Task WriteAsync(IEnumerable<LogEvent> events) {
+        public Task WriteAsync(IEnumerable<LogEvent> events)
+        {
 
 
             var payloadBuilder = new StringBuilder();
             Assert.DoesNotThrow(() => {
-               
-                foreach (var logEvent in events) {
+
+                foreach (var logEvent in events)
+                {
                     payloadBuilder.Append(_apiKey).Append(' ');
                     var formatted = _formatter.FormatMessage(logEvent);
                     Assert.IsNotEmpty(formatted);
@@ -41,7 +44,8 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             return Task.CompletedTask;
         }
 
-        public void Close() {
+        public void Close()
+        {
 
         }
     }
