@@ -78,6 +78,9 @@ namespace Serilog.Sinks.Datadog.Logs
         /// Emit a batch of log events to Datadog logs-backend.
         /// </summary>
         /// <param name="events">The events to emit.</param>
+        /// <remarks>
+        /// Only a single batch is able to be on the wire at a time. This ensures resources can be recycled per-batch.
+        /// </remarks>
         protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
         {
             if (_cancellationToken.IsCancellationRequested) {
@@ -133,9 +136,6 @@ namespace Serilog.Sinks.Datadog.Logs
                         _cancellationTokenSource.Dispose();
                     }
                 }, CancellationToken.None);
-            } else
-            {
-                
             }
         }
 
