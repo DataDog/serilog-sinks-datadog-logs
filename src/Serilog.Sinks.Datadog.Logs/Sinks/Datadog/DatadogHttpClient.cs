@@ -17,14 +17,13 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     public sealed class DatadogHttpClient : IDatadogClient
     {
-
+        private const string _logsRoute = "/api/v2/logs";
         private const string _version = "0.3.5";
         private const string _content = "application/json";
         private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
         private const int _maxMessageSize = 256 * 1024;
 
         private readonly DatadogConfiguration _config;
-        private readonly string _url;
         private readonly LogFormatter _formatter;
         private readonly HttpClient _client;
         private readonly CancellationTokenSource _cancellationTokenSource;
@@ -47,10 +46,10 @@ namespace Serilog.Sinks.Datadog.Logs
             _cancellationToken = _cancellationTokenSource.Token;
             _config = config;
             _client = new HttpClient();
+            _client.BaseAddress = new Uri(config.Url);
             _client.DefaultRequestHeaders.Add("DD-API-KEY", apiKey);
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", _version);
-            _url = $"{config.Url}/api/v2/logs";
             _formatter = formatter;
         }
 
@@ -63,6 +62,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
             for (var i = 0; i < events.Length; i++)
             {
+
                 if (_cancellationToken.IsCancellationRequested)
                 {
                     break;
@@ -71,17 +71,17 @@ namespace Serilog.Sinks.Datadog.Logs
                 var logSize = Encoding.UTF8.GetMaxByteCount(formattedLog.Length);
                 if (logSize > _maxMessageSize)
                 {
+
                     if (onException != null)
                     {
                         onException(new TooBigLogEventException(events[i]));
                     }
                     continue; // The log is dropped because the backend would not accept it
                 }
+
                 if ((chunkBuilder.Length + logSize) > _maxSize)
                 {
-                    var payload = chunkBuilder.Append(']').ToString();
-                    var eventSegment = new ArraySegment<LogEvent>(events, chunkStart, chunkCount);
-                    await Post(payload, eventSegment, onException).ConfigureAwait(false);
+                    await PostChunk().ConfigureAwait(false);
                     // Flush the chunkBuffer to the chunks and reset the chunkBuffer
                     chunkBuilder.Clear();
                     chunkCount = 0;
@@ -93,12 +93,25 @@ namespace Serilog.Sinks.Datadog.Logs
                 chunkBuilder.Append(formattedLog);
                 chunkCount++;
             }
+            if (chunkBuilder.Length != 0)
+            {
+                await PostChunk().ConfigureAwait(false);
+                chunkBuilder.Clear();
+            }
+
+            async Task PostChunk()
+            {
+                var payload = chunkBuilder.Append(']').ToString();
+                var eventSegment = new ArraySegment<LogEvent>(events, chunkStart, chunkCount);
+                await Post(payload, eventSegment, onException).ConfigureAwait(false);
+            }
         }
 
         private async Task Post(string payload, ArraySegment<LogEvent> events, Action<Exception> onException)
         {
             if (!_cancellationToken.IsCancellationRequested)
             {
+     
                 using (var content = new StringContent(payload, Encoding.UTF8, _content))
                 {
                     for (var retry = 0; retry < MaxRetries; retry++)
@@ -111,7 +124,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
                         try
                         {
-                            using (var result = await _client.PostAsync(_url, content, _cancellationToken).ConfigureAwait(false))
+                            using (var result = await _client.PostAsync(_logsRoute, content, _cancellationToken).ConfigureAwait(false))
                             {
                                 if (result == null) { continue; }
                                 if ((int)result.StatusCode >= 500) { continue; }
