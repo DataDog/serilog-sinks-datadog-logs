@@ -120,10 +120,12 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             if (disposing)
             {
-                // delay the dispose by one batch period so lingering events get logged. 
-                // after that the dispose thread will enter and block any further writes.
+               
                 try
                 {
+                    // delay the dispose by one batch period so lingering events get logged. 
+                    // after that the dispose thread will enter and block any further writes.
+                    Task.Delay(DefaultBatchPeriod, _cancellationToken).Wait(_cancellationToken);
                     Semaphore.Wait(_cancellationToken);
                     _cancellationTokenSource.Cancel();
                     _client.Dispose();
