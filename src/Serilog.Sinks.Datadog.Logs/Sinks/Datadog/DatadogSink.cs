@@ -122,21 +122,19 @@ namespace Serilog.Sinks.Datadog.Logs
             {
                 // delay the dispose by one batch period so lingering events get logged. 
                 // after that the dispose thread will enter and block any further writes.
-                _ = Task.Delay(DefaultBatchPeriod).ContinueWith(_ => {
-                    try
-                    {
-                        Semaphore.Wait(_cancellationToken);
-                        _cancellationTokenSource.Cancel();
-                        _client.Dispose();
-                        base.Dispose(disposing);
+                try
+                {
+                    Semaphore.Wait(_cancellationToken);
+                    _cancellationTokenSource.Cancel();
+                    _client.Dispose();
+                    base.Dispose(disposing);
 
-                    } finally
-                    {
-                        Semaphore.Release();
-                        Semaphore.Dispose();
-                        _cancellationTokenSource.Dispose();
-                    }
-                }, CancellationToken.None);
+                } finally
+                {
+                    Semaphore.Release();
+                    Semaphore.Dispose();
+                    _cancellationTokenSource.Dispose();
+                }
             }
         }
 
