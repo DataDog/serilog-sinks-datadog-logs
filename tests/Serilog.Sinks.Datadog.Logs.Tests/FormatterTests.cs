@@ -29,10 +29,10 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
                     new { Latitude = long.MinValue, Longitude = long.MaxValue }
                 };
                 const int elapsedMs = 34;
-                Assert.DoesNotThrow(() => log.Information("Processed {@Positions} in {Elapsed:000} ms.", new Dictionary<string, object>
+                Assert.DoesNotThrow(() => log.Information("Processed {@Positions} in {Elapsed:000} ms.", new
                 {
-                    { "positions", positions },
-                    { "creator", "ACME" }
+                    positions,
+                    creator = "ACME"
                 }, elapsedMs));
             }
         }

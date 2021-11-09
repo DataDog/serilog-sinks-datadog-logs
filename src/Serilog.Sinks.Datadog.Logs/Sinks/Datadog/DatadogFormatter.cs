@@ -89,13 +89,13 @@ namespace Serilog.Sinks.Datadog.Logs.Sinks.Datadog
                     switch (property.Key)
                     {
                         case "ddservice":
-                            WriteRawJsonProperty("service", property.Value, ref delim, output);
+                            WriteJsonProperty("service", property.Value, ref delim, output);
                             break;
                         case "ddhost":
-                            WriteRawJsonProperty("host", property.Value, ref delim, output);
+                            WriteJsonProperty("host", property.Value, ref delim, output);
                             break;
                         default:
-                            WriteRawJsonProperty(property.Key, property.Value, ref delim, output);
+                            WriteJsonProperty(property.Key, property.Value, ref delim, output);
                             break;
                     }
                 }
@@ -176,7 +176,7 @@ namespace Serilog.Sinks.Datadog.Logs.Sinks.Datadog
         }
 
 
-        static void WriteLiteral<TType>(TType value, TextWriter output, bool forceQuotation = false)
+        static void WriteLiteral(object value, TextWriter output, bool forceQuotation = false)
         {
             if (value == null)
             {
@@ -184,11 +184,12 @@ namespace Serilog.Sinks.Datadog.Logs.Sinks.Datadog
                 return;
             }
 
-            if (_literalWriters.TryGetValue(typeof(TType), out var writer))
+            if (_literalWriters.TryGetValue(value.GetType(), out var writer))
             {
                 writer(value, forceQuotation, output);
                 return;
             }
+
             WriteString(value.ToString() ?? "", output);
         }
 
@@ -206,18 +207,7 @@ namespace Serilog.Sinks.Datadog.Logs.Sinks.Datadog
             output.Write("}");
         }
 
-        static void WriteRawJsonProperty(string name, LogEventPropertyValue value, ref string precedingDelimiter, TextWriter output)
-        {
-            output.Write(precedingDelimiter);
-            output.Write("\"");
-            output.Write(name);
-            output.Write("\":");
-            WriteString(value.ToString() ?? "", output, false);
-            precedingDelimiter = ",";
-        }
-
-
-        static void WriteJsonProperty<TType>(string name, TType value, ref string precedingDelimiter, TextWriter output)
+        static void WriteJsonProperty(string name, object value, ref string precedingDelimiter, TextWriter output)
         {
             output.Write(precedingDelimiter);
             output.Write("\"");
