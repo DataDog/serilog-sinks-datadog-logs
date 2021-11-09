@@ -81,7 +81,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         /// <param name="events">The events to emit.</param>
         /// <remarks>
-        /// Only a single batch is able to be on the wire at a time. This ensures resources can be recycled per-batch.
+        /// When <see cref="DatadogConfiguration.RecycleResources"/> is true, only a single batch is able to be on the wire at a time. This ensures resources can be recycled per-batch.
         /// </remarks>
         protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
         {
@@ -131,10 +131,10 @@ namespace Serilog.Sinks.Datadog.Logs
                 try
                 {
                     // delay the dispose by one batch period so lingering events get logged. 
-                    // after that the dispose thread will enter and block any further writes.
                     Task.Delay(DefaultBatchPeriod, _cancellationToken).Wait(_cancellationToken);
                     if (_recycleResources)
                     {
+                        // after that the dispose thread will enter and block any further writes.
                         Semaphore.Wait(_cancellationToken);
                     }
                     _cancellationTokenSource.Cancel();
