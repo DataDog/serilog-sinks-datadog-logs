@@ -62,6 +62,11 @@ namespace Serilog.Sinks.Datadog.Logs
             } finally
             {
                 builder.Clear();
+                // remove properties incase other sinks are being used.
+                logEvent.RemovePropertyIfPresent("ddsource");
+                logEvent.RemovePropertyIfPresent("ddservice");
+                logEvent.RemovePropertyIfPresent("ddhost");
+                logEvent.RemovePropertyIfPresent("ddtags");
             }
         }
     }

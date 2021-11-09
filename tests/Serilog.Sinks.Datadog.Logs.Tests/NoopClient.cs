@@ -23,13 +23,12 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
 
         public Task WriteAsync(LogEvent[] events, Action<Exception> onException)
         {
-
-
             var payloadBuilder = new StringBuilder();
             Assert.DoesNotThrow(() => {
 
                 foreach (var logEvent in events)
                 {
+                  
                     payloadBuilder.Append(_apiKey).Append(' ');
                     var formatted = _formatter.FormatMessage(logEvent);
                     Assert.IsNotEmpty(formatted);
@@ -39,8 +38,6 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             });
             var payload = payloadBuilder.ToString();
             Assert.IsNotEmpty(payload);
-
-            Console.WriteLine(payload);
             return Task.CompletedTask;
         }
 
