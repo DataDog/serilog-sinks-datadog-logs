@@ -97,7 +97,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
                 if (_recycleResources)
                 {
-                    await Semaphore.WaitAsync(_cancellationToken);
+                    await Semaphore.WaitAsync(_cancellationToken).ConfigureAwait(false);
                 }
                 var logEvents = events.ToArray();
                 await _client.WriteAsync(logEvents, _exceptionHandler).ConfigureAwait(false);
