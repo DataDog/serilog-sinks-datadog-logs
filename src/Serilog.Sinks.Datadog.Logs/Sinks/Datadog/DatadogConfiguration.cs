@@ -44,6 +44,10 @@ namespace Serilog.Sinks.Datadog.Logs
         /// Use TCP or HTTP.
         /// </summary>
         public bool UseTCP { get; set; }
+        /// <summary>
+        /// When set to true the sink priotizes memory usage over throughput. 
+        /// </summary>
+        public bool RecycleResources { get; set;}
 
         public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {}
 

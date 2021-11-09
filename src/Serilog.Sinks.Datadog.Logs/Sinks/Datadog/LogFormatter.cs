@@ -25,6 +25,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly string _service;
         private readonly string _host;
         private readonly string _tags;
+        private readonly bool _recycleResources;
         private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
         private static readonly StringBuilder _payloadBuilder = new StringBuilder(_maxSize, _maxSize);
         /// <summary>
@@ -50,12 +51,13 @@ namespace Serilog.Sinks.Datadog.Logs
         private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, Formatting = Newtonsoft.Json.Formatting.None };
 #endif
 
-        public LogFormatter(string source, string service, string host, string[] tags)
+        public LogFormatter(string source, string service, string host, string[] tags, bool recycleResources)
         {
             _source = source ?? CSHARP;
             _service = service;
             _host = host;
             _tags = tags != null ? string.Join(",", tags) : null;
+            _recycleResources = recycleResources;
         }
 
         /// <summary>
@@ -63,9 +65,11 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public string FormatMessage(LogEvent logEvent)
         {
+            var builder = _recycleResources ? _payloadBuilder : new StringBuilder();
             try
             {
-                var writer = new StringWriter(_payloadBuilder);
+               
+                var writer = new StringWriter(builder);
 
                 // Serialize the event as JSON. The Serilog formatter handles the
                 // internal structure of the logEvent to give a nicely formatted JSON
@@ -96,7 +100,7 @@ namespace Serilog.Sinks.Datadog.Logs
 #endif
             } finally
             {
-                _payloadBuilder.Clear();
+                builder.Clear();
             }
         }
 

@@ -24,6 +24,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private const int _maxMessageSize = 256 * 1024;
 
         private readonly LogFormatter _formatter;
+        private readonly bool _recycleResources;
         private readonly HttpClient _client;
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly CancellationToken _cancellationToken;
@@ -41,7 +42,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int MaxBackoff = 30;
 
-        public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, CancellationToken token)
+        public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool recycleResources, CancellationToken token)
         {
             _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
             _cancellationToken = _cancellationTokenSource.Token;
@@ -51,6 +52,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", _version);
             _formatter = formatter;
+            _recycleResources = recycleResources;
         }
 
         /// <summary>
@@ -64,6 +66,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </remarks>
         public async Task WriteAsync(LogEvent[] events, Action<Exception> onException)
         {
+            var builder = _recycleResources ? _chunkBuilder : new StringBuilder();
             try
             {
                 var chunkCount = 0;
@@ -87,34 +90,34 @@ namespace Serilog.Sinks.Datadog.Logs
                         continue; // The log is dropped because the backend would not accept it
                     }
 
-                    if ((_chunkBuilder.Length + logSize) > _maxSize)
+                    if ((builder.Length + logSize) > _maxSize)
                     {
                         await PostChunk().ConfigureAwait(false);
                         // Flush the chunkBuffer to the chunks and reset the chunkBuffer
-                        _chunkBuilder.Clear();
+                        builder.Clear();
                         chunkCount = 0;
                         chunkStart = i;
                     }
                     // if the builder is empty write the prefix, otherwise write the delimiter
-                    _chunkBuilder.Append(_chunkBuilder.Length == 0 ? '[' : ',');
+                    builder.Append(builder.Length == 0 ? '[' : ',');
                     // now write our formatted log
-                    _chunkBuilder.Append(formattedLog);
+                    builder.Append(formattedLog);
                     chunkCount++;
                 }
-                if (_chunkBuilder.Length != 0)
+                if (builder.Length != 0)
                 {
                     await PostChunk().ConfigureAwait(false);
                 }
 
                 async Task PostChunk()
                 {
-                    var payload = _chunkBuilder.Append(']').ToString();
+                    var payload = builder.Append(']').ToString();
                     var eventSegment = new ArraySegment<LogEvent>(events, chunkStart, chunkCount);
                     await Post(payload, eventSegment, onException).ConfigureAwait(false);
                 }
             } finally
             {
-                _chunkBuilder.Clear();
+                builder.Clear();
             }
         }
 

@@ -21,7 +21,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             _formatter = formatter;
         }
 
-        public Task WriteAsync(IEnumerable<LogEvent> events, Action<Exception> onException)
+        public Task WriteAsync(LogEvent[] events, Action<Exception> onException)
         {
 
 

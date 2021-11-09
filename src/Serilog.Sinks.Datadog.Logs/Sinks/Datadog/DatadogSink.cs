@@ -21,6 +21,7 @@ namespace Serilog.Sinks.Datadog.Logs
     {
         private readonly IDatadogClient _client;
         private readonly Action<Exception> _exceptionHandler;
+        private readonly bool _recycleResources;
 
         /// <summary>
         /// The time to wait before emitting a new event batch.
@@ -43,6 +44,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _cancellationToken = _cancellationTokenSource.Token;
             _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection, _cancellationToken);
             _exceptionHandler = exceptionHandler;
+            _recycleResources = config.RecycleResources;
         }
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int queueLimit, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null)
@@ -93,7 +95,10 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     return;
                 }
-                await Semaphore.WaitAsync(_cancellationToken);
+                if (_recycleResources)
+                {
+                    await Semaphore.WaitAsync(_cancellationToken);
+                }
                 var logEvents = events.ToArray();
                 await _client.WriteAsync(logEvents, _exceptionHandler).ConfigureAwait(false);
             } catch (Exception e)
@@ -107,7 +112,10 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
             } finally
             {
-                Semaphore.Release();
+                if (_recycleResources)
+                {
+                    Semaphore.Release();
+                }
             }
         }
 
@@ -120,21 +128,26 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             if (disposing)
             {
-               
                 try
                 {
                     // delay the dispose by one batch period so lingering events get logged. 
                     // after that the dispose thread will enter and block any further writes.
                     Task.Delay(DefaultBatchPeriod, _cancellationToken).Wait(_cancellationToken);
-                    Semaphore.Wait(_cancellationToken);
+                    if (_recycleResources)
+                    {
+                        Semaphore.Wait(_cancellationToken);
+                    }
                     _cancellationTokenSource.Cancel();
                     _client.Dispose();
                     base.Dispose(disposing);
 
                 } finally
                 {
-                    Semaphore.Release();
-                    Semaphore.Dispose();
+                    if (_recycleResources)
+                    {
+                        Semaphore.Release();
+                        Semaphore.Dispose();
+                    }
                     _cancellationTokenSource.Dispose();
                 }
             }
@@ -149,13 +162,13 @@ namespace Serilog.Sinks.Datadog.Logs
             bool detectTCPDisconnection,
             CancellationToken cancellationToken)
         {
-            var logFormatter = new LogFormatter(source, service, host, tags);
+            var logFormatter = new LogFormatter(source, service, host, tags, configuration.RecycleResources);
             if (configuration.UseTCP)
             {
-                return new DatadogTcpClient(configuration, logFormatter, apiKey, detectTCPDisconnection, cancellationToken);
+                return new DatadogTcpClient(configuration, logFormatter, apiKey, detectTCPDisconnection, configuration.RecycleResources, cancellationToken);
             } else
             {
-                return new DatadogHttpClient(configuration, logFormatter, apiKey, cancellationToken);
+                return new DatadogHttpClient(configuration, logFormatter, apiKey, configuration.RecycleResources, cancellationToken);
             }
         }
 

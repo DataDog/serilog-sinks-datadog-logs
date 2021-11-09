@@ -60,7 +60,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly CancellationToken _cancellationToken;
 
-        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection, CancellationToken token)
+        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection, bool recycleResources, CancellationToken token)
         {
             _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
             _cancellationToken = _cancellationTokenSource.Token;
