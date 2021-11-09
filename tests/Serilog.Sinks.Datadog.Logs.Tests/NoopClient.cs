@@ -40,7 +40,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             var payload = payloadBuilder.ToString();
             Assert.IsNotEmpty(payload);
 
-
+            Console.WriteLine(payload);
             return Task.CompletedTask;
         }
 
