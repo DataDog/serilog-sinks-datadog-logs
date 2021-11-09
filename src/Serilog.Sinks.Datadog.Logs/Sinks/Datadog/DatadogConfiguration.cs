@@ -49,14 +49,15 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public bool RecycleResources { get; set;}
 
-        public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {}
+        public DatadogConfiguration() : this(DDUrl, DDPort, true, false, false) {}
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false, bool recycleResources = false)
         {
             Url = url;
             Port = port;
             UseSSL = useSSL;
             UseTCP = useTCP;
+            RecycleResources = recycleResources;
         }
 
         public override string ToString()
