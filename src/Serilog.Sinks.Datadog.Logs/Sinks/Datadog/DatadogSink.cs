@@ -145,7 +145,15 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     if (_recycleResources)
                     {
-                        Semaphore.Release();
+                        try
+                        {
+                            Semaphore.Release();
+                        }
+                        catch
+                        {
+
+                           //NOOP
+                        }
                         Semaphore.Dispose();
                     }
                     _cancellationTokenSource.Dispose();
