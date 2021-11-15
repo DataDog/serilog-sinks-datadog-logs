@@ -80,7 +80,7 @@ namespace Serilog.Sinks.Datadog.Logs
                         break;
                     }
                     var formattedLog = _formatter.FormatMessage(events[i]);
-                    var logSize = Encoding.UTF8.GetMaxByteCount(formattedLog.Length);
+                    var logSize = Encoding.UTF8.GetByteCount(formattedLog);
                     if (logSize > _maxMessageSize)
                     {
                         if (onException != null)
