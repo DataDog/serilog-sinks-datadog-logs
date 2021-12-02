@@ -8,6 +8,8 @@ using System.IO;
 using System.Collections.Generic;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using Newtonsoft.Json.Converters;
+using static Serilog.Sinks.Datadog.Logs.Sinks.Datadog.OriginalCaseNamingResolver;
 #if NET5_0_OR_GREATER
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -39,13 +41,30 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Settings to drop null values.
         /// </summary>
-        private static readonly JsonSerializerOptions settings = new JsonSerializerOptions { WriteIndented = false, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping};
+        private static readonly JsonSerializerOptions settings = new JsonSerializerOptions 
+        {
+            WriteIndented = false, 
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, 
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
 #else
 
         /// <summary>
         /// Settings to drop null values.
         /// </summary>
-        private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, Formatting = Newtonsoft.Json.Formatting.None };
+        private static readonly JsonSerializerSettings settings = new JsonSerializerSettings 
+        {
+            ContractResolver = new OriginalCasePropertyNamesContractResolver(),
+            NullValueHandling = NullValueHandling.Ignore, 
+            Formatting = Newtonsoft.Json.Formatting.None,
+            Converters = new List<JsonConverter>
+            {
+                new IsoDateTimeConverter
+                {
+                    DateTimeFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.ffffffzzz"
+                }
+            }
+        };
 #endif
 
         public LogFormatter(string source, string service, string host, string[] tags)
