@@ -124,6 +124,26 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
   }
 }
 ```
+
+## Support Configuration Options
+
+[`DatadogLogs`](https://github.com/DataDog/serilog-sinks-datadog-logs/blob/master/src/Serilog.Sinks.Datadog.Logs/Configuration/Extensions/System.Configuration/LoggerConfigurationDatadogLogsExtensions.cs#L40) supports the following arguments:
+
+| argument                 | Type                   | Description                                             |
+| ------------------------ | ---------------------- | ------------------------------------------------------- |
+| `apiKey`                 | `string`               | Your Datadog API key.                                   |
+| `source`                 | `string`               | The integration name.                                   |
+| `service`                | `string`               | The service name.                                       |
+| `host`                   | `string`               | The host name.                                          |
+| `tags`                   | `string[]`             | Custom tags.                                            |
+| `configuration`          | `DatadogConfiguration` | The Datadog logs client configuration.                  |
+| `logLevel`               | `LogEventLevel`        | The minimum log level for the sink.                     |
+| `batchSizeLimit`         | `int`                  | The maximum number of events to emit in a single batch. |
+| `batchPeriod`            | `TimeSpan`             | The time to wait before emitting a new event batch.     |
+| `queueLimit`             | `int`                  | Maximum number of events to hold in the sink's internal queue, or `null` for an unbounded queue. The default is `10000` |
+| `exceptionHandler`       | `Action<Exception>`    | This function is called when an exception occurs when using `DatadogConfiguration.UseTCP=false` (the default configuration). |
+| `detectTCPDisconnection` | `bool`                 | Detect when the TCP connection is lost and recreate a new connection. |
+
 ## How to build the NuGet package
 
 Bump the version in `src/Serilog.Sinks.Datadog.Logs.csproj` and merge your branch
