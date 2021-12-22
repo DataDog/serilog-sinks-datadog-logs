@@ -10,13 +10,14 @@ using Serilog.Events;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
-    public interface IDatadogClient
+    public interface IDatadogClient : IDisposable
     {
         /// <summary>
         /// Send payload to Datadog logs-backend.
         /// </summary>
         /// <param name="events">Serilog events to send.</param>
-        Task WriteAsync(IEnumerable<LogEvent> events);
+        /// <param name="onException">A callback that is invoked whenever the client fails to write events.</param>
+        Task WriteAsync(LogEvent[] events, Action<Exception> onException);
 
         /// <summary>
         /// Cleanup existing resources.

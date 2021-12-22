@@ -10,21 +10,27 @@ using System.Net.Http;
 using Serilog.Events;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Serilog.Debugging;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
-    public class DatadogHttpClient : IDatadogClient
+    public sealed class DatadogHttpClient : IDatadogClient
     {
-
+        private const string _logsRoute = "/api/v2/logs";
         private const string _version = "0.3.5";
         private const string _content = "application/json";
         private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
         private const int _maxMessageSize = 256 * 1024;
 
-        private readonly DatadogConfiguration _config;
-        private readonly string _url;
         private readonly LogFormatter _formatter;
+        private readonly bool _recycleResources;
         private readonly HttpClient _client;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationToken _cancellationToken;
+        private static readonly StringBuilder _chunkBuilder = new StringBuilder(_maxSize, _maxSize);
+
+
 
         /// <summary>
         /// Max number of retries when sending failed.
@@ -36,123 +42,141 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int MaxBackoff = 30;
 
-        public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey)
+        public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool recycleResources, CancellationToken token)
         {
-            _config = config;
+            _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+            _cancellationToken = _cancellationTokenSource.Token;
             _client = new HttpClient();
+            _client.BaseAddress = new Uri(config.Url);
             _client.DefaultRequestHeaders.Add("DD-API-KEY", apiKey);
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", _version);
-            _url = $"{config.Url}/api/v2/logs";
             _formatter = formatter;
+            _recycleResources = recycleResources;
         }
 
-        public Task WriteAsync(IEnumerable<LogEvent> events)
+        /// <summary>
+        /// Writes the specified <paramref name="events"/> to Datadog logs route. 
+        /// </summary>
+        /// <param name="events">The events that will be sent.</param>
+        /// <param name="onException">The callback that is invoked when an exception occurs in this event but is handled gracefully.</param>
+        /// <remarks>
+        /// <para>This method uses a semaphore so that only one batch of events is ever on the wire at any given time.</para>
+        /// <para>This allows for a single allocated contiguous memory to be written to for serialization of events.</para>
+        /// </remarks>
+        public async Task WriteAsync(LogEvent[] events, Action<Exception> onException)
         {
-            var serializedEvents = SerializeEvents(events);
-            var tasks = serializedEvents.LogEventChunks.Select(Post);
-
-            var tooBigTask = Task.Run(() =>
+            var builder = _recycleResources ? _chunkBuilder : new StringBuilder();
+            try
             {
-                if (serializedEvents.TooBigLogEvents.Count > 0)
+                var chunkCount = 0;
+                var chunkStart = 0;
+
+                for (var i = 0; i < events.Length; i++)
                 {
-                    throw new TooBigLogEventException(serializedEvents.TooBigLogEvents);
+
+                    if (_cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                    var formattedLog = _formatter.FormatMessage(events[i]);
+                    var logSize = Encoding.UTF8.GetByteCount(formattedLog);
+                    if (logSize > _maxMessageSize)
+                    {
+                        if (onException != null)
+                        {
+                            onException(new TooBigLogEventException(events[i]));
+                        }
+                        continue; // The log is dropped because the backend would not accept it
+                    }
+
+                    if ((builder.Length + logSize) > _maxSize)
+                    {
+                        await PostChunk().ConfigureAwait(false);
+                        // Flush the chunkBuffer to the chunks and reset the chunkBuffer
+                        builder.Clear();
+                        chunkCount = 0;
+                        chunkStart = i;
+                    }
+                    // if the builder is empty write the prefix, otherwise write the delimiter
+                    builder.Append(builder.Length == 0 ? '[' : ',');
+                    // now write our formatted log
+                    builder.Append(formattedLog);
+                    chunkCount++;
                 }
-            });
+                if (builder.Length != 0)
+                {
+                    await PostChunk().ConfigureAwait(false);
+                }
 
-            tasks = tasks.Concat(new[] { tooBigTask });
-
-            return Task.WhenAll(tasks);
-        }
-
-        private SerializedEvents SerializeEvents(IEnumerable<LogEvent> events)
-        {
-            var serializedEvents = new SerializedEvents();
-            int currentSize = 0;
-
-            var chunkBuffer = new List<string>(events.Count());
-            var logEvents = new List<LogEvent>(events.Count());
-            foreach (var logEvent in events)
+                async Task PostChunk()
+                {
+                    var payload = builder.Append(']').ToString();
+                    var eventSegment = new ArraySegment<LogEvent>(events, chunkStart, chunkCount);
+                    await Post(payload, eventSegment, onException).ConfigureAwait(false);
+                }
+            } finally
             {
-                var formattedLog = _formatter.FormatMessage(logEvent);
-                var logSize = Encoding.UTF8.GetByteCount(formattedLog);
-                if (logSize > _maxMessageSize)
-                {
-                    serializedEvents.TooBigLogEvents.Add(logEvent);
-                    continue;  // The log is dropped because the backend would not accept it
-                }
-                if (currentSize + logSize > _maxSize)
-                {
-                    // Flush the chunkBuffer to the chunks and reset the chunkBuffer
-                    serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
-                    chunkBuffer.Clear();
-                    logEvents.Clear();
-                    currentSize = 0;
-                }
-                chunkBuffer.Add(formattedLog);
-                logEvents.Add(logEvent);
-                currentSize += logSize;
+                builder.Clear();
             }
-            if (chunkBuffer.Count != 0)
+        }
+
+        private async Task Post(string payload, ArraySegment<LogEvent> events, Action<Exception> onException)
+        {
+            if (!_cancellationToken.IsCancellationRequested)
             {
-                serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
+                using (var content = new StringContent(payload, Encoding.UTF8, _content))
+                {
+                    for (var retry = 0; retry < MaxRetries; retry++)
+                    {
+                        if (_cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+                        var backoff = (int)Math.Min(Math.Pow(2, retry), MaxBackoff);
+                        if (retry > 0)
+                        {
+                            await Task.Delay(backoff * 1000, _cancellationToken).ConfigureAwait(false);
+                        }
+
+                        try
+                        {
+                            using (var result = await _client.PostAsync(_logsRoute, content, _cancellationToken).ConfigureAwait(false))
+                            {
+                                if (result == null) { continue; }
+                                if ((int)result.StatusCode >= 500) { continue; }
+                                if ((int)result.StatusCode == 429) { continue; }
+                                if ((int)result.StatusCode >= 400) { break; }
+                                if (result.IsSuccessStatusCode) { return; }
+                            }
+                        } catch
+                        {
+                            // ignored
+                        }
+                    }
+                }
+                if (events.Array != null && onException != null)
+                {
+                    var array = new LogEvent[events.Count];
+                    Array.Copy(events.Array, events.Offset, array, 0, array.Length);
+                    onException(new CannotSendLogEventException(payload, array));
+                }
             }
-
-            return serializedEvents;
-
         }
 
-        private static LogEventChunk GenerateChunk(IEnumerable<string> collection, string delimiter, string prefix, string suffix, IEnumerable<LogEvent> logEvents)
+        void IDatadogClient.Close()
         {
-            return new LogEventChunk
-            {
-                Payload = prefix + String.Join(delimiter, collection) + suffix,
-                LogEvents = new List<LogEvent>(logEvents), // Copy `logEvents` as `logEvents` is reused.
-            };
+            Dispose();
         }
 
-        private async Task Post(LogEventChunk logEventChunk)
+        public void Dispose()
         {
-            var payload = logEventChunk.Payload;
-            var content = new StringContent(payload, Encoding.UTF8, _content);
-            for (int retry = 0; retry < MaxRetries; retry++)
+            _cancellationTokenSource.Cancel();
+            if (_client != null)
             {
-                int backoff = (int)Math.Min(Math.Pow(2, retry), MaxBackoff);
-                if (retry > 0)
-                {
-                    await Task.Delay(backoff * 1000);
-                }
-
-                try
-                {
-                    var result = await _client.PostAsync(_url, content);
-                    if (result == null) { continue; }
-                    if ((int)result.StatusCode >= 500) { continue; }
-                    if ((int)result.StatusCode == 429) { continue; }
-                    if ((int)result.StatusCode >= 400) { break; }
-                    if (result.IsSuccessStatusCode) { return; }
-                }
-                catch (Exception)
-                {
-                    continue;
-                }
+                _client.Dispose();
             }
-
-            throw new CannotSendLogEventException(payload, logEventChunk.LogEvents);
-        }
-
-        void IDatadogClient.Close() { }
-
-        private class LogEventChunk
-        {
-            public string Payload { get; set; }
-            public IEnumerable<LogEvent> LogEvents { get; set; }
-        }
-
-        private class SerializedEvents
-        {
-            public List<LogEventChunk> LogEventChunks { get; } = new List<LogEventChunk>();
-            public List<LogEvent> TooBigLogEvents { get; } = new List<LogEvent>();
+            _cancellationTokenSource.Dispose();
         }
     }
 }

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Serilog.Debugging;
 using Serilog.Events;
@@ -20,11 +21,16 @@ namespace Serilog.Sinks.Datadog.Logs
     {
         private readonly IDatadogClient _client;
         private readonly Action<Exception> _exceptionHandler;
+        private readonly bool _recycleResources;
 
         /// <summary>
         /// The time to wait before emitting a new event batch.
         /// </summary>
         private static readonly TimeSpan DefaultBatchPeriod = TimeSpan.FromSeconds(2);
+
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationToken _cancellationToken;
+        private readonly static SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
 
         /// <summary>
         /// The maximum number of events to emit in a single batch.
@@ -34,28 +40,34 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod)
         {
-            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection);
+            _cancellationTokenSource = new CancellationTokenSource();
+            _cancellationToken = _cancellationTokenSource.Token;
+            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection, _cancellationToken);
             _exceptionHandler = exceptionHandler;
+            _recycleResources = config.RecycleResources;
         }
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int queueLimit, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod, queueLimit)
         {
-            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection);
+            _cancellationTokenSource = new CancellationTokenSource();
+            _cancellationToken = _cancellationTokenSource.Token;
+            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection, _cancellationToken);
             _exceptionHandler = exceptionHandler;
+
         }
 
         public static DatadogSink Create(
-            string apiKey, 
-            string source, 
-            string service, 
-            string host, 
-            string[] tags, 
-            DatadogConfiguration config, 
-            int? batchSizeLimit = null, 
-            TimeSpan? batchPeriod = null, 
-            int? queueLimit = null, 
-            Action<Exception> exceptionHandler = null, 
+            string apiKey,
+            string source,
+            string service,
+            string host,
+            string[] tags,
+            DatadogConfiguration config,
+            int? batchSizeLimit = null,
+            TimeSpan? batchPeriod = null,
+            int? queueLimit = null,
+            Action<Exception> exceptionHandler = null,
             bool detectTCPDisconnection = false, IDatadogClient client = null)
         {
             if (queueLimit.HasValue)
@@ -68,21 +80,42 @@ namespace Serilog.Sinks.Datadog.Logs
         /// Emit a batch of log events to Datadog logs-backend.
         /// </summary>
         /// <param name="events">The events to emit.</param>
+        /// <remarks>
+        /// When <see cref="DatadogConfiguration.RecycleResources"/> is true, only a single batch is able to be on the wire at a time. This ensures resources can be recycled per-batch.
+        /// </remarks>
         protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
         {
+            if (_cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
             try
             {
                 if (!events.Any())
                 {
                     return;
                 }
-
-                var task = _client.WriteAsync(events);
-                await RunTask(task);
-            }
-            catch (Exception e)
+                if (_recycleResources)
+                {
+                    await Semaphore.WaitAsync(_cancellationToken).ConfigureAwait(false);
+                }
+                var logEvents = events.ToArray();
+                await _client.WriteAsync(logEvents, _exceptionHandler).ConfigureAwait(false);
+            } catch (Exception e)
             {
-                OnException(e);
+                if (e is OperationCanceledException && events.Any())
+                {
+                    OnException(new LogEventException("Datadog log sink was disposed", events.ToArray()));
+                } else
+                {
+                    OnException(e);
+                }
+            } finally
+            {
+                if (_recycleResources)
+                {
+                    Semaphore.Release();
+                }
             }
         }
 
@@ -93,42 +126,57 @@ namespace Serilog.Sinks.Datadog.Logs
         /// the object is being disposed from the finalizer.</param>
         protected override void Dispose(bool disposing)
         {
-            _client.Close();
-            base.Dispose(disposing);
+            if (disposing)
+            {
+                try
+                {
+                    // delay the dispose by one batch period so lingering events get logged. 
+                    Task.Delay(DefaultBatchPeriod, _cancellationToken).Wait(_cancellationToken);
+                    if (_recycleResources)
+                    {
+                        // after that the dispose thread will enter and block any further writes.
+                        Semaphore.Wait(_cancellationToken);
+                    }
+                    _cancellationTokenSource.Cancel();
+                    _client.Dispose();
+                    base.Dispose(disposing);
+
+                } finally
+                {
+                    if (_recycleResources)
+                    {
+                        try
+                        {
+                            Semaphore.Release();
+                        }
+                        catch
+                        {
+
+                           //NOOP
+                        }
+                        Semaphore.Dispose();
+                    }
+                    _cancellationTokenSource.Dispose();
+                }
+            }
         }
 
-        private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration configuration, bool detectTCPDisconnection)
+        private static IDatadogClient CreateDatadogClient(string apiKey,
+            string source,
+            string service,
+            string host,
+            string[] tags,
+            DatadogConfiguration configuration,
+            bool detectTCPDisconnection,
+            CancellationToken cancellationToken)
         {
-            var logFormatter = new LogFormatter(source, service, host, tags);
+            var logFormatter = new LogFormatter(source, service, host, tags, configuration.RecycleResources);
             if (configuration.UseTCP)
             {
-                return new DatadogTcpClient(configuration, logFormatter, apiKey, detectTCPDisconnection);
-            }
-            else
+                return new DatadogTcpClient(configuration, logFormatter, apiKey, detectTCPDisconnection, configuration.RecycleResources, cancellationToken);
+            } else
             {
-                return new DatadogHttpClient(configuration, logFormatter, apiKey);
-            }
-        }
-
-        private async Task RunTask(Task task)
-        {
-            try
-            {
-                await task.ConfigureAwait(false);
-            }
-            catch
-            {
-                if (task?.Exception != null)
-                {
-                    foreach (var innerException in task.Exception.InnerExceptions)
-                    {
-                        OnException(innerException);
-                    }
-                }
-                else
-                {
-                    throw;
-                }
+                return new DatadogHttpClient(configuration, logFormatter, apiKey, configuration.RecycleResources, cancellationToken);
             }
         }
 

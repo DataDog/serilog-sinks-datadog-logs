@@ -15,13 +15,14 @@ using System.Collections.Generic;
 using Serilog.Events;
 using System.Net.NetworkInformation;
 using System.Net;
+using System.Threading;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
     /// <summary>
     /// TCP Client that forwards log events to Datadog.
     /// </summary>
-    public class DatadogTcpClient : IDatadogClient
+    public sealed class DatadogTcpClient : IDatadogClient
     {
         private readonly DatadogConfiguration _config;
         private readonly LogFormatter _formatter;
@@ -34,12 +35,12 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// API Key / message-content delimiter.
         /// </summary>
-        private const string WhiteSpace = " ";
+        private const char WhiteSpace = ' ';
 
         /// <summary>
         /// Message delimiter.
         /// </summary>
-        private const string MessageDelimiter = "\n";
+        private const char MessageDelimiter = '\n';
 
         /// <summary>
         /// Max number of retries when sending failed.
@@ -56,8 +57,13 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
 
-        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection)
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly CancellationToken _cancellationToken;
+
+        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection, bool recycleResources, CancellationToken token)
         {
+            _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+            _cancellationToken = _cancellationTokenSource.Token;
             _config = config;
             _formatter = formatter;
             _apiKey = apiKey;
@@ -69,51 +75,62 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private async Task ConnectAsync()
         {
+            if (_cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException();
+            }
             _client = new TcpClient();
-            await _client.ConnectAsync(_config.Url, _config.Port);
+            await _client.ConnectAsync(_config.Url, _config.Port).ConfigureAwait(false);
             _connectionMatcher = ConnectionMatcher.TryCreate(_client.Client.LocalEndPoint, _client.Client.RemoteEndPoint);
 
             Stream rawStream = _client.GetStream();
             if (_config.UseSSL)
             {
                 SslStream secureStream = new SslStream(rawStream);
-                await secureStream.AuthenticateAsClientAsync(_config.Url);
+                await secureStream.AuthenticateAsClientAsync(_config.Url).ConfigureAwait(false);
                 _stream = secureStream;
-            }
-            else
+            } else
             {
                 _stream = rawStream;
             }
         }
 
-        public async Task WriteAsync(IEnumerable<LogEvent> events)
+        public async Task WriteAsync(LogEvent[] events, Action<Exception> onException)
         {
             var payloadBuilder = new StringBuilder();
             foreach (var logEvent in events)
             {
-                payloadBuilder.Append(_apiKey + WhiteSpace);
+                payloadBuilder.Append(_apiKey).Append(WhiteSpace);
                 payloadBuilder.Append(_formatter.FormatMessage(logEvent));
                 payloadBuilder.Append(MessageDelimiter);
             }
-            string payload = payloadBuilder.ToString();
+            var payload = payloadBuilder.ToString();
 
             for (int retry = 0; retry < MaxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(retry, 2), MaxBackoff);
                 if (retry > 0)
                 {
-                    await Task.Delay(backoff * 1000);
+                    await Task.Delay(backoff * 1000, _cancellationToken).ConfigureAwait(false);
+                }
+                if (_cancellationToken.IsCancellationRequested)
+                {
+                    break;
                 }
 
                 if (IsConnectionClosed())
                 {
                     try
                     {
-                        await ConnectAsync();
-                    }
-                    catch (Exception e)
+                        await ConnectAsync().ConfigureAwait(false);
+                    } catch (Exception e)
                     {
+
                         SelfLog.WriteLine("Could not connect to Datadog: {0}", e);
+                        if (e is OperationCanceledException)
+                        {
+                            break;
+                        }
                         continue;
                     }
                 }
@@ -121,10 +138,9 @@ namespace Serilog.Sinks.Datadog.Logs
                 try
                 {
                     byte[] data = UTF8.GetBytes(payload);
-                    _stream.Write(data, 0, data.Length);
+                    await _stream.WriteAsync(data, 0, data.Length, _cancellationToken).ConfigureAwait(false);
                     return;
-                }
-                catch (Exception e)
+                } catch (Exception e)
                 {
                     CloseConnection();
                     SelfLog.WriteLine("Could not send data to Datadog: {0}", e);
@@ -161,8 +177,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 try
                 {
                     connections = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections();
-                }
-                catch (NotImplementedException)
+                } catch (NotImplementedException)
                 {
                     // Happen when using Mono on MacOs. Keep the same behavior as before.
                     return false;
@@ -190,18 +205,24 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public void Close()
         {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            _cancellationTokenSource.Cancel();
             if (!IsConnectionClosed())
             {
                 try
                 {
                     _stream.Flush();
-                }
-                catch (Exception e)
+                } catch (Exception e)
                 {
                     SelfLog.WriteLine("Could not flush the remaining data: {0}", e);
                 }
                 CloseConnection();
             }
+            _cancellationTokenSource.Dispose();
         }
     }
 }

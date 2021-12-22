@@ -33,7 +33,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Port of the server to send log events to.
         /// </summary>
-        public int Port { get; set;  }
+        public int Port { get; set; }
 
         /// <summary>
         /// Use SSL or plain text.
@@ -44,16 +44,20 @@ namespace Serilog.Sinks.Datadog.Logs
         /// Use TCP or HTTP.
         /// </summary>
         public bool UseTCP { get; set; }
+        /// <summary>
+        /// When set to true the sink priotizes memory usage over throughput. 
+        /// </summary>
+        public bool RecycleResources { get; set;}
 
-        public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {
-        }
+        public DatadogConfiguration() : this(DDUrl, DDPort, true, false, false) {}
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false, bool recycleResources = false)
         {
             Url = url;
             Port = port;
             UseSSL = useSSL;
             UseTCP = useTCP;
+            RecycleResources = recycleResources;
         }
 
         public override string ToString()

@@ -21,15 +21,14 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             _formatter = formatter;
         }
 
-        public Task WriteAsync(IEnumerable<LogEvent> events)
+        public Task WriteAsync(LogEvent[] events, Action<Exception> onException)
         {
-
-
             var payloadBuilder = new StringBuilder();
             Assert.DoesNotThrow(() => {
 
                 foreach (var logEvent in events)
                 {
+                  
                     payloadBuilder.Append(_apiKey).Append(' ');
                     var formatted = _formatter.FormatMessage(logEvent);
                     Assert.IsNotEmpty(formatted);
@@ -39,14 +38,17 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             });
             var payload = payloadBuilder.ToString();
             Assert.IsNotEmpty(payload);
-
-
             return Task.CompletedTask;
         }
 
         public void Close()
         {
 
+        }
+
+        public void Dispose()
+        {
+            
         }
     }
 }

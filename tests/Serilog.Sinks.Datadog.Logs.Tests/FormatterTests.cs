@@ -17,7 +17,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
 #endif
             const string apiKey = "NOT_AN_API_KEY";
             var config = new DatadogConfiguration();
-            var logFormatter = new LogFormatter(ver, "TEST", "localhost", new[] { "the", "coolest", "test" });
+            var logFormatter = new LogFormatter(ver, "TEST", "localhost", new[] { "the", "coolest", "test" }, true);
             var noop = new NoopClient(apiKey, logFormatter);
             using (var log = new LoggerConfiguration().WriteTo.DatadogLogs(apiKey, configuration: config, client: noop).CreateLogger())
             {
@@ -29,10 +29,10 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
                     new { Latitude = long.MinValue, Longitude = long.MaxValue }
                 };
                 const int elapsedMs = 34;
-                Assert.DoesNotThrow(() => log.Information("Processed {@Positions} in {Elapsed:000} ms.", new Dictionary<string, object>
+                Assert.DoesNotThrow(() => log.Information("Processed {@Positions} in {Elapsed:000} ms.", new
                 {
-                    { "positions", positions },
-                    { "creator", "ACME" }
+                    positions,
+                    creator = "ACME"
                 }, elapsedMs));
             }
         }
