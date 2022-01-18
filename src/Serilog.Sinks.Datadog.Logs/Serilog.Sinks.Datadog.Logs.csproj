@@ -25,11 +25,11 @@
     <Compile Remove="Configuration\Implementations\Microsoft.Extensions.Configuration\**\*.*" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'net5.0' And '$(TargetFramework)' != 'net6.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'net5.0'">
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net472' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net5.0' Or '$(TargetFramework)' == 'net6.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net472' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net5.0'">
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.1.1" />
     <Compile Include="Configuration\Extensions\Microsoft.Extensions.Configuration\**\*.cs" />
     <Compile Include="Configuration\Implementations\Microsoft.Extensions.Configuration\**\*.cs" />
@@ -39,7 +39,7 @@
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' And '$(TargetFramework)' != 'net472' And '$(TargetFramework)' != 'net461' And '$(TargetFramework)' != 'net5.0' And '$(TargetFramework)' != 'net6.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' And '$(TargetFramework)' != 'net472' And '$(TargetFramework)' != 'net461' And '$(TargetFramework)' != 'net5.0'">
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
     <Compile Include="Configuration\Extensions\System.Configuration\**\*.cs" />
   </ItemGroup>
