@@ -58,12 +58,13 @@ namespace Serilog.Sinks.Datadog.Logs
             TimeSpan? batchPeriod = null,
             int? queueLimit = null,
             Action<Exception> exceptionHandler = null,
-            bool detectTCPDisconnection = false, IDatadogClient client = null)
+            bool detectTCPDisconnection = false, IDatadogClient client = null,
+            LogFormatter logFormatter = null)
         {
             if (queueLimit.HasValue)
-                return new DatadogSink(apiKey, source, service, host, tags, config, queueLimit.Value, batchSizeLimit, batchPeriod, exceptionHandler, detectTCPDisconnection, client);
+                return new DatadogSink(apiKey, source, service, host, tags, config, queueLimit.Value, batchSizeLimit, batchPeriod, exceptionHandler, detectTCPDisconnection, client, logFormatter);
 
-            return new DatadogSink(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, exceptionHandler, detectTCPDisconnection, client);
+            return new DatadogSink(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, exceptionHandler, detectTCPDisconnection, client, logFormatter);
         }
 
         /// <summary>
