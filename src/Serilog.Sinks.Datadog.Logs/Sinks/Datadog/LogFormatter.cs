@@ -85,12 +85,19 @@ namespace Serilog.Sinks.Datadog.Logs
             // displayed on the Log Explorer
             RenameKey(logEventAsDict, "RenderedMessage", "message");
             RenameKey(logEventAsDict, "Level", "level");
+
+            TransformPayload(logEventAsDict);
+
             // Convert back the dict to a JSON string
 #if NET5_0_OR_GREATER
-    return JsonSerializer.Serialize(logEventAsDict, settings);
+            return JsonSerializer.Serialize(logEventAsDict, settings);
 #else
             return JsonConvert.SerializeObject(logEventAsDict, settings);
 #endif
+        }
+
+        protected virtual void TransformPayload(Dictionary<string, object> payload)
+        {
         }
 
         /// <summary>

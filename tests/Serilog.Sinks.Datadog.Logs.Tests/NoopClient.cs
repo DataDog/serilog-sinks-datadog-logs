@@ -15,6 +15,8 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         private readonly string _apiKey;
         private readonly LogFormatter _formatter;
 
+        public string LastLog { get; private set; }
+
         public NoopClient(string apiKey, LogFormatter formatter)
         {
             _apiKey = apiKey;
@@ -39,7 +41,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             });
             var payload = payloadBuilder.ToString();
             Assert.IsNotEmpty(payload);
-
+            LastLog = payload;
 
             return Task.CompletedTask;
         }
