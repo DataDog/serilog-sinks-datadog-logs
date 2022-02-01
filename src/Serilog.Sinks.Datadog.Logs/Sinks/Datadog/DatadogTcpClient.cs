@@ -24,7 +24,7 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogTcpClient : IDatadogClient
     {
         private readonly DatadogConfiguration _config;
-        private readonly LogFormatter _formatter;
+        private readonly ILogFormatter _formatter;
         private readonly string _apiKey;
         private readonly bool _detectTCPDisconnection;
         private TcpClient _client;
@@ -56,7 +56,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
 
-        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection)
+        public DatadogTcpClient(DatadogConfiguration config, ILogFormatter formatter, string apiKey, bool detectTCPDisconnection)
         {
             _config = config;
             _formatter = formatter;

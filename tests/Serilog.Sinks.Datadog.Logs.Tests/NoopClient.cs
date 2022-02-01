@@ -13,11 +13,11 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
     public class NoopClient : IDatadogClient
     {
         private readonly string _apiKey;
-        private readonly LogFormatter _formatter;
+        private readonly ILogFormatter _formatter;
 
         public string LastLog { get; private set; }
 
-        public NoopClient(string apiKey, LogFormatter formatter)
+        public NoopClient(string apiKey, ILogFormatter formatter)
         {
             _apiKey = apiKey;
             _formatter = formatter;

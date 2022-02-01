@@ -18,7 +18,7 @@ using Newtonsoft.Json;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
-    public class LogFormatter
+    public class LogFormatter : ILogFormatter
     {
         private readonly string _source;
         private readonly string _service;

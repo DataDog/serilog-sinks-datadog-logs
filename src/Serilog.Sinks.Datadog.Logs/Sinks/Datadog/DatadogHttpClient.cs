@@ -23,7 +23,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private readonly DatadogConfiguration _config;
         private readonly string _url;
-        private readonly LogFormatter _formatter;
+        private readonly ILogFormatter _formatter;
         private readonly HttpClient _client;
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int MaxBackoff = 30;
 
-        public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey)
+        public DatadogHttpClient(DatadogConfiguration config, ILogFormatter formatter, string apiKey)
         {
             _config = config;
             _client = new HttpClient();

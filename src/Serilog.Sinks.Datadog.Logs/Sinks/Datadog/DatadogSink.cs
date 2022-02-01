@@ -31,7 +31,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int DefaultBatchSizeLimit = 50;
 
-        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null, LogFormatter logFormatter = null)
+        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null, ILogFormatter logFormatter = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod)
         {
             logFormatter = logFormatter ?? new LogFormatter(source, service, host, tags);
@@ -39,7 +39,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _exceptionHandler = exceptionHandler;
         }
 
-        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int queueLimit, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null, LogFormatter logFormatter = null)
+        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int queueLimit, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null, ILogFormatter logFormatter = null)
             : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod, queueLimit)
         {
             logFormatter = logFormatter ?? new LogFormatter(source, service, host, tags);
@@ -59,7 +59,7 @@ namespace Serilog.Sinks.Datadog.Logs
             int? queueLimit = null,
             Action<Exception> exceptionHandler = null,
             bool detectTCPDisconnection = false, IDatadogClient client = null,
-            LogFormatter logFormatter = null)
+            ILogFormatter logFormatter = null)
         {
             if (queueLimit.HasValue)
                 return new DatadogSink(apiKey, source, service, host, tags, config, queueLimit.Value, batchSizeLimit, batchPeriod, exceptionHandler, detectTCPDisconnection, client, logFormatter);
@@ -100,7 +100,7 @@ namespace Serilog.Sinks.Datadog.Logs
             base.Dispose(disposing);
         }
 
-        private static IDatadogClient CreateDatadogClient(string apiKey, LogFormatter logFormatter, DatadogConfiguration configuration, bool detectTCPDisconnection)
+        private static IDatadogClient CreateDatadogClient(string apiKey, ILogFormatter logFormatter, DatadogConfiguration configuration, bool detectTCPDisconnection)
         {
             if (configuration.UseTCP)
             {
