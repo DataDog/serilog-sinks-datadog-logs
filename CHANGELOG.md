@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.6
+
+* Remove unused UTF8 property #66. Thanks @jnyrup  
+* Support Datadog V2 intake API 
+* .NET 5 and .NET 6 support #68. Thanks @AndrewMD5  
+* Remove remaining traces of net6.0 #72. Thanks @jnyrup 
+
 ## 0.3.5
 
 * Handle TCP disconnection leading to missing logs #64. Thanks @lokalan.
