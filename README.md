@@ -115,6 +115,12 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
         "source": "<SOURCE_NAME>",
         "host": "<HOST_NAME>",
         "tags": ["<TAG_1>:<VALUE_1>", "<TAG_2>:<VALUE_2>"],
+        "configuration" : {
+          "url": "http-intake.logs.datadoghq.com", 
+          "port": 443, 
+          "useSSL": true, 
+          "useTCP": true
+        }
       }
     }
   ],
@@ -124,6 +130,8 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
   }
 }
 ```
+
+**NOTE:** the `configuration` section is optional so that you may override the defaults. 
 
 ## Support Configuration Options
 
