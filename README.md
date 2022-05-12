@@ -116,8 +116,8 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
         "host": "<HOST_NAME>",
         "tags": ["<TAG_1>:<VALUE_1>", "<TAG_2>:<VALUE_2>"],
         "configuration" : {
-          "url": "http-intake.logs.datadoghq.com", 
-          "port": 443, 
+          "url": "intake.logs.datadoghq.com", 
+          "port": 10516, 
           "useSSL": true, 
           "useTCP": true
         }
