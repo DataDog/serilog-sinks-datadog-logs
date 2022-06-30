@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.7
+* Bump Newtonsoft.Json to `13.0.1`
+
 ## 0.3.6
 
 * Remove unused UTF8 property #66. Thanks @jnyrup  
