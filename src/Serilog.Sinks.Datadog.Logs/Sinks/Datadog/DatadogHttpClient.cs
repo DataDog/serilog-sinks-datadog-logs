@@ -16,7 +16,7 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogHttpClient : IDatadogClient
     {
 
-        private const string _version = "0.3.6";
+        private const string _version = "0.3.7";
         private const string _content = "application/json";
         private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
         private const int _maxMessageSize = 256 * 1024;
