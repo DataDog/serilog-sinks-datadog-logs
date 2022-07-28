@@ -98,7 +98,7 @@ In the platform, the log looks like as the following JSON Object:
 ## Configuration from `appsettings.json`
 
 Since 0.2.0, you can configure the Datadog sink by using an `appsettings.json` file with
-the [Serilog.Setting.Configuration](https://github.com/serilog/serilog-settings-configuration) package.
+the [Serilog.Settings.Configuration](https://github.com/serilog/serilog-settings-configuration) package.
 
 In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is shown below:
 
