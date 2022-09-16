@@ -3,11 +3,13 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
 
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
@@ -16,7 +18,7 @@ using Serilog.Sinks.PeriodicBatching;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
-    public class DatadogSink : PeriodicBatchingSink
+    public class DatadogSink : IBatchedLogEventSink, IDisposable
     {
         private readonly IDatadogClient _client;
         private readonly Action<Exception> _exceptionHandler;
@@ -30,22 +32,15 @@ namespace Serilog.Sinks.Datadog.Logs
         /// The maximum number of events to emit in a single batch.
         /// </summary>
         private const int DefaultBatchSizeLimit = 50;
+        
 
-        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null)
-            : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod)
+        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null)
         {
             _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection);
             _exceptionHandler = exceptionHandler;
         }
 
-        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, int queueLimit, int? batchSizeLimit = null, TimeSpan? batchPeriod = null, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null)
-            : base(batchSizeLimit ?? DefaultBatchSizeLimit, batchPeriod ?? DefaultBatchPeriod, queueLimit)
-        {
-            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection);
-            _exceptionHandler = exceptionHandler;
-        }
-
-        public static DatadogSink Create(
+        public static ILogEventSink Create(
             string apiKey, 
             string source, 
             string service, 
@@ -58,17 +53,27 @@ namespace Serilog.Sinks.Datadog.Logs
             Action<Exception> exceptionHandler = null, 
             bool detectTCPDisconnection = false, IDatadogClient client = null)
         {
-            if (queueLimit.HasValue)
-                return new DatadogSink(apiKey, source, service, host, tags, config, queueLimit.Value, batchSizeLimit, batchPeriod, exceptionHandler, detectTCPDisconnection, client);
+            var options = new PeriodicBatchingSinkOptions()
+            {
+                BatchSizeLimit = batchSizeLimit ?? DefaultBatchSizeLimit,
+                Period = batchPeriod ?? DefaultBatchPeriod,
+            };
 
-            return new DatadogSink(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, exceptionHandler, detectTCPDisconnection, client);
+            if (queueLimit.HasValue)
+            {
+                options.QueueLimit = queueLimit.Value;
+            }
+            
+            var sink = new DatadogSink(apiKey, source, service, host, tags, config, exceptionHandler, detectTCPDisconnection, client);
+
+            return new PeriodicBatchingSink(sink, options);
         }
 
         /// <summary>
         /// Emit a batch of log events to Datadog logs-backend.
         /// </summary>
         /// <param name="events">The events to emit.</param>
-        protected override async Task EmitBatchAsync(IEnumerable<LogEvent> events)
+        public async Task EmitBatchAsync(IEnumerable<LogEvent> events)
         {
             try
             {
@@ -86,15 +91,17 @@ namespace Serilog.Sinks.Datadog.Logs
             }
         }
 
+        public async Task OnEmptyBatchAsync()
+        {
+            await Task.Yield();
+        }
+
         /// <summary>
         /// Free resources held by the sink.
         /// </summary>
-        /// <param name="disposing">If true, called because the object is being disposed; if false,
-        /// the object is being disposed from the finalizer.</param>
-        protected override void Dispose(bool disposing)
+        public void Dispose()
         {
             _client.Close();
-            base.Dispose(disposing);
         }
 
         private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration configuration, bool detectTCPDisconnection)
@@ -134,10 +141,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private void OnException(Exception e)
         {
-            if (_exceptionHandler != null)
-            {
-                _exceptionHandler(e);
-            }
+            _exceptionHandler?.Invoke(e);
 
             SelfLog.WriteLine("{0}", e.Message);
         }
