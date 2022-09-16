@@ -14,7 +14,9 @@ using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Sinks.PeriodicBatching;
 
-[assembly: InternalsVisibleTo("Serilog.Sinks.Datadog.Logs.Tests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100a188c93acb61ca68b3b11e5047e3602ffea902e7413310ce96cdd8e31992d36d9276cd36ce55b7870a39379fec698b458bebaa0dc8c72b5e438c7418d640c9bc46a21af3f08a48b68aa8ec23fe0d01bcdcfa5126c66e7586ae08dc1c21142b2c7d49cb09649a2fc9ba767fc88fee6347536a51d28ff398eaabb760494db90dd0")]
+[assembly:
+    InternalsVisibleTo(
+        "Serilog.Sinks.Datadog.Logs.Tests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100a188c93acb61ca68b3b11e5047e3602ffea902e7413310ce96cdd8e31992d36d9276cd36ce55b7870a39379fec698b458bebaa0dc8c72b5e438c7418d640c9bc46a21af3f08a48b68aa8ec23fe0d01bcdcfa5126c66e7586ae08dc1c21142b2c7d49cb09649a2fc9ba767fc88fee6347536a51d28ff398eaabb760494db90dd0")]
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -22,6 +24,11 @@ namespace Serilog.Sinks.Datadog.Logs
     {
         private readonly IDatadogClient _client;
         private readonly Action<Exception> _exceptionHandler;
+
+#if !NETSTANDARD1_0_OR_GREATER
+        private static Task completedTask = Task.FromResult(false);
+#endif
+
 
         /// <summary>
         /// The time to wait before emitting a new event batch.
@@ -32,25 +39,28 @@ namespace Serilog.Sinks.Datadog.Logs
         /// The maximum number of events to emit in a single batch.
         /// </summary>
         private const int DefaultBatchSizeLimit = 50;
-        
 
-        public DatadogSink(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration config, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false, IDatadogClient client = null)
+
+        public DatadogSink(string apiKey, string source, string service, string host, string[] tags,
+            DatadogConfiguration config, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false,
+            IDatadogClient client = null)
         {
-            _client = client ?? CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection);
+            _client = client ??
+                      CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection);
             _exceptionHandler = exceptionHandler;
         }
 
         public static ILogEventSink Create(
-            string apiKey, 
-            string source, 
-            string service, 
-            string host, 
-            string[] tags, 
-            DatadogConfiguration config, 
-            int? batchSizeLimit = null, 
-            TimeSpan? batchPeriod = null, 
-            int? queueLimit = null, 
-            Action<Exception> exceptionHandler = null, 
+            string apiKey,
+            string source,
+            string service,
+            string host,
+            string[] tags,
+            DatadogConfiguration config,
+            int? batchSizeLimit = null,
+            TimeSpan? batchPeriod = null,
+            int? queueLimit = null,
+            Action<Exception> exceptionHandler = null,
             bool detectTCPDisconnection = false, IDatadogClient client = null)
         {
             var options = new PeriodicBatchingSinkOptions()
@@ -63,8 +73,9 @@ namespace Serilog.Sinks.Datadog.Logs
             {
                 options.QueueLimit = queueLimit.Value;
             }
-            
-            var sink = new DatadogSink(apiKey, source, service, host, tags, config, exceptionHandler, detectTCPDisconnection, client);
+
+            var sink = new DatadogSink(apiKey, source, service, host, tags, config, exceptionHandler,
+                detectTCPDisconnection, client);
 
             return new PeriodicBatchingSink(sink, options);
         }
@@ -91,9 +102,13 @@ namespace Serilog.Sinks.Datadog.Logs
             }
         }
 
-        public async Task OnEmptyBatchAsync()
+        public Task OnEmptyBatchAsync()
         {
-            await Task.Yield();
+#if NETSTANDARD1_0_OR_GREATER
+            return Task.CompletedTask;
+#else
+            return completedTask;
+#endif
         }
 
         /// <summary>
@@ -104,7 +119,8 @@ namespace Serilog.Sinks.Datadog.Logs
             _client.Close();
         }
 
-        private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host, string[] tags, DatadogConfiguration configuration, bool detectTCPDisconnection)
+        private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host,
+            string[] tags, DatadogConfiguration configuration, bool detectTCPDisconnection)
         {
             var logFormatter = new LogFormatter(source, service, host, tags);
             if (configuration.UseTCP)
