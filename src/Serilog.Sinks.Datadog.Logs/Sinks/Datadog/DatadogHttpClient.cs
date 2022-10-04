@@ -50,7 +50,7 @@ namespace Serilog.Sinks.Datadog.Logs
         public Task WriteAsync(IEnumerable<LogEvent> events)
         {
             var serializedEvents = SerializeEvents(events);
-            var tasks = serializedEvents.LogEventChunks.Select(Post);
+            var tasks = serializedEvents.LogEventChunks.Select(post => Post(post));
 
             var tooBigTask = Task.Run(() =>
             {
@@ -70,8 +70,9 @@ namespace Serilog.Sinks.Datadog.Logs
             var serializedEvents = new SerializedEvents();
             int currentSize = 0;
 
-            var chunkBuffer = new List<string>(events.Count());
-            var logEvents = new List<LogEvent>(events.Count());
+            var eventsQuantity = events.Count();
+            var chunkBuffer = new List<string>(eventsQuantity);
+            var logEvents = new List<LogEvent>(eventsQuantity);
             foreach (var logEvent in events)
             {
                 var formattedLog = _formatter.FormatMessage(logEvent);
@@ -106,7 +107,7 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             return new LogEventChunk
             {
-                Payload = prefix + String.Join(delimiter, collection) + suffix,
+                Payload = prefix + string.Join(delimiter, collection) + suffix,
                 LogEvents = new List<LogEvent>(logEvents), // Copy `logEvents` as `logEvents` is reused.
             };
         }
