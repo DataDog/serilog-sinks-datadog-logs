@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.8
+* Update Serilog.Sinks.PeriodicBatching to `3.0.0`. Thanks @dominikus1993 
+  
 ## 0.3.7
 * Bump Newtonsoft.Json to `13.0.1`
 
