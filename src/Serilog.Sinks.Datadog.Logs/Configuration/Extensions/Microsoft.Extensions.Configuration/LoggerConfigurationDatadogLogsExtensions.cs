@@ -74,7 +74,6 @@ namespace Serilog
             return loggerConfiguration.Sink(sink, logLevel);
         }
 
-
         /// <summary>
         /// Configure the sink from the provided IConfigurationSection if the sink options have not already been set
         /// </summary>
