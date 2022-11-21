@@ -8,6 +8,7 @@ using System.IO;
 using System.Collections.Generic;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using Serilog.Formatting;
 #if NET5_0_OR_GREATER
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -33,7 +34,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Shared JSON formatter.
         /// </summary>
-        private static readonly JsonFormatter formatter = new JsonFormatter(renderMessage: true);
+        private readonly ITextFormatter _formatter;
 
 #if NET5_0_OR_GREATER
         /// <summary>
@@ -48,8 +49,9 @@ namespace Serilog.Sinks.Datadog.Logs
         private static readonly JsonSerializerSettings settings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, Formatting = Newtonsoft.Json.Formatting.None };
 #endif
 
-        public LogFormatter(string source, string service, string host, string[] tags)
+        public LogFormatter(ITextFormatter formatter, string source, string service, string host, string[] tags)
         {
+            _formatter = formatter;
             _source = source ?? CSHARP;
             _service = service;
             _host = host;
@@ -66,7 +68,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
             // Serialize the event as JSON. The Serilog formatter handles the
             // internal structure of the logEvent to give a nicely formatted JSON
-            formatter.Format(logEvent, writer);
+            _formatter.Format(logEvent, writer);
 
             // Convert the JSON to a dictionnary and add the DataDog properties
 #if NET5_0_OR_GREATER

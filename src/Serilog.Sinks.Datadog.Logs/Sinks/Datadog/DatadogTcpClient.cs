@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using Serilog.Events;
 using System.Net.NetworkInformation;
 using System.Net;
+using Serilog.Formatting;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -24,7 +25,7 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogTcpClient : IDatadogClient
     {
         private readonly DatadogConfiguration _config;
-        private readonly LogFormatter _formatter;
+        private readonly ITextFormatter _formatter;
         private readonly string _apiKey;
         private readonly bool _detectTCPDisconnection;
         private TcpClient _client;
@@ -56,7 +57,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
 
-        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection)
+        public DatadogTcpClient(DatadogConfiguration config, ITextFormatter formatter, string apiKey, bool detectTCPDisconnection)
         {
             _config = config;
             _formatter = formatter;
@@ -92,7 +93,10 @@ namespace Serilog.Sinks.Datadog.Logs
             foreach (var logEvent in events)
             {
                 payloadBuilder.Append(_apiKey + WhiteSpace);
-                payloadBuilder.Append(_formatter.FormatMessage(logEvent));
+                var body = new StringBuilder();
+                var writer = new System.IO.StringWriter(body);
+                _formatter.Format(logEvent, writer);
+                payloadBuilder.Append(body.ToString());
                 payloadBuilder.Append(MessageDelimiter);
             }
             string payload = payloadBuilder.ToString();

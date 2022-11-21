@@ -10,6 +10,7 @@ using System.Net.Http;
 using Serilog.Events;
 using System.Collections.Generic;
 using System.Linq;
+using Serilog.Formatting;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -23,8 +24,9 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private readonly DatadogConfiguration _config;
         private readonly string _url;
-        private readonly LogFormatter _formatter;
+        private readonly ITextFormatter _formatter;
         private readonly HttpClient _client;
+        private readonly MetadataEnricher _metadataEnricher;
 
         /// <summary>
         /// Max number of retries when sending failed.
@@ -36,7 +38,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int MaxBackoff = 30;
 
-        public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey)
+        public DatadogHttpClient(DatadogConfiguration config, MetadataEnricher metadataEnricher, ITextFormatter formatter, string apiKey)
         {
             _config = config;
             _client = new HttpClient();
@@ -44,6 +46,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", _version);
             _url = $"{config.Url}/api/v2/logs";
+            _metadataEnricher = metadataEnricher;
             _formatter = formatter;
         }
 
@@ -75,8 +78,12 @@ namespace Serilog.Sinks.Datadog.Logs
             var logEvents = new List<LogEvent>(eventsQuantity);
             foreach (var logEvent in events)
             {
-                var formattedLog = _formatter.FormatMessage(logEvent);
-                var logSize = Encoding.UTF8.GetByteCount(formattedLog);
+                _metadataEnricher.Enrich(logEvent);
+                var payload = new StringBuilder();
+                var writer = new System.IO.StringWriter(payload);
+                _formatter.Format(logEvent, writer);
+                Console.WriteLine(payload.ToString());
+                var logSize = Encoding.UTF8.GetByteCount(payload.ToString());
                 if (logSize > _maxMessageSize)
                 {
                     serializedEvents.TooBigLogEvents.Add(logEvent);
@@ -90,7 +97,7 @@ namespace Serilog.Sinks.Datadog.Logs
                     logEvents.Clear();
                     currentSize = 0;
                 }
-                chunkBuffer.Add(formattedLog);
+                chunkBuffer.Add(payload.ToString());
                 logEvents.Add(logEvent);
                 currentSize += logSize;
             }
