@@ -25,10 +25,6 @@
     <Compile Remove="Configuration\Implementations\Microsoft.Extensions.Configuration\**\*.*" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' != 'net6.0'">
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net461' Or '$(TargetFramework)' == 'net6.0'">
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.1.1" />
     <Compile Include="Configuration\Extensions\Microsoft.Extensions.Configuration\**\*.cs" />

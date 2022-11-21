@@ -48,8 +48,9 @@ namespace Serilog.Sinks.Datadog.Logs
             IDatadogClient client = null, ITextFormatter formatter = null)
         {
             formatter = formatter ?? new DatadogJsonFormatter();
+            var enricher = new MetadataEnricher(source, service, host, tags);
             _client = client ??
-                      CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection, formatter);
+                      CreateDatadogClient(apiKey, enricher, config, detectTCPDisconnection, formatter);
             _exceptionHandler = exceptionHandler;
         }
 
@@ -124,10 +125,8 @@ namespace Serilog.Sinks.Datadog.Logs
             _client.Close();
         }
 
-        private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host,
-            string[] tags, DatadogConfiguration configuration, bool detectTCPDisconnection, ITextFormatter formatter)
+        private static IDatadogClient CreateDatadogClient(string apiKey, MetadataEnricher enricher, DatadogConfiguration configuration, bool detectTCPDisconnection, ITextFormatter formatter)
         {
-            var enricher = new MetadataEnricher(source, service, host, tags);
             if (configuration.UseTCP)
             {
                 return new DatadogTcpClient(configuration, formatter, apiKey, detectTCPDisconnection);

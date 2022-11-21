@@ -9,6 +9,19 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogJsonFormatter: ExpressionTemplate
     {
-        public DatadogJsonFormatter() : base("{ {timestamp: @t, @mt, @l: if @l = 'Information' then undefined() else @l, @x, ..@p} }\n") {}
+        public DatadogJsonFormatter() : base(@"{ {
+            Timestamp: @t,
+            level: @l,
+            MessageTemplate: @mt,
+            message: @m, 
+            Properties: {..@p, ddproperties: undefined()},
+            Renderings: @r, 
+            Exception: @x,
+            EventId: @i,
+            ddsource: @p['ddproperties']['ddsource'], 
+            service: @p['ddproperties']['service'], 
+            host: @p['ddproperties']['host'], 
+            ddtags: @p['ddproperties']['ddtags']} 
+        }") {}
     }
 }

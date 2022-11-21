@@ -7,6 +7,7 @@ using Serilog.Core;
 using Serilog.Events;
 using Serilog.Capturing;
 using Serilog.Core.Enrichers;
+using System.Collections.Generic;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -30,10 +31,13 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public void Enrich(LogEvent logEvent) 
         {
-            logEvent.AddOrUpdateProperty(new LogEventProperty("source", new ScalarValue(_source)));
-            if (_service != null) { logEvent.AddOrUpdateProperty(new LogEventProperty("service", new ScalarValue(_service))); }
-            if (_host != null) { logEvent.AddOrUpdateProperty(new LogEventProperty("host", new ScalarValue(_host))); }
-            if (_tags != null) { logEvent.AddOrUpdateProperty(new LogEventProperty("tags", new ScalarValue(_tags))); }
+            var props = new List<LogEventProperty> {
+                new LogEventProperty("ddsource", new ScalarValue(_source)),
+            };
+            if (_service != null) { props.Add(new LogEventProperty("service", new ScalarValue(_service))); }
+            if (_host != null) { props.Add(new LogEventProperty("host", new ScalarValue(_host))); }
+            if (_tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(_tags))); }
+            logEvent.AddOrUpdateProperty(new LogEventProperty("ddproperties", new StructureValue(props)));
         }
     }
 }
