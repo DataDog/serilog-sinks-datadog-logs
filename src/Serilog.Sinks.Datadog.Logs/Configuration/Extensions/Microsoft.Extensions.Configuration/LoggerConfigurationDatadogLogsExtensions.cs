@@ -6,6 +6,7 @@
 using Microsoft.Extensions.Configuration;
 using Serilog.Configuration;
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Sinks.Datadog.Logs;
 using System;
 
@@ -53,7 +54,8 @@ namespace Serilog
             TimeSpan? batchPeriod = null,
             int? queueLimit = null,
             Action<Exception> exceptionHandler = null,
-            bool detectTCPDisconnection = false, IDatadogClient client = null)
+            bool detectTCPDisconnection = false, IDatadogClient client = null,
+            ITextFormatter formatter = null)
         {
             if (loggerConfiguration == null)
             {
@@ -65,7 +67,7 @@ namespace Serilog
             }
 
             var config = ApplyMicrosoftExtensionsConfiguration.ConfigureDatadogConfiguration(configuration, configurationSection);
-            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, client);
+            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, client, formatter);
 
             return loggerConfiguration.Sink(sink, logLevel);
         }

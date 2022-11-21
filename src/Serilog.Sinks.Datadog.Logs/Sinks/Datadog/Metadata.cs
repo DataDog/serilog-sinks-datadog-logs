@@ -3,41 +3,30 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
 
-using Serilog.Core;
 using Serilog.Events;
-using Serilog.Capturing;
-using Serilog.Core.Enrichers;
 using System.Collections.Generic;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
-    /// <summary>
-    /// </summary>
     public class MetadataEnricher
     {
         private const string CSHARP = "csharp";
-        private readonly string _source;
-        private readonly string _service;
-        private readonly string _host;
-        private readonly string _tags;
+        private readonly LogEventProperty _ddProperties;
 
         public MetadataEnricher(string source, string service, string host, string[] tags)
         {
-            _source = source ?? CSHARP;
-            _service = service;
-            _host = host;
-            _tags = tags != null ? string.Join(",", tags) : null;
+            var props = new List<LogEventProperty> {
+                new LogEventProperty("ddsource", new ScalarValue(source ?? CSHARP)),
+            };
+            if (service != null) { props.Add(new LogEventProperty("service", new ScalarValue(service))); }
+            if (host != null) { props.Add(new LogEventProperty("host", new ScalarValue(host))); }
+            if (tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", tags)))); }
+            _ddProperties = new LogEventProperty("ddproperties", new StructureValue(props));
         }
 
         public void Enrich(LogEvent logEvent) 
         {
-            var props = new List<LogEventProperty> {
-                new LogEventProperty("ddsource", new ScalarValue(_source)),
-            };
-            if (_service != null) { props.Add(new LogEventProperty("service", new ScalarValue(_service))); }
-            if (_host != null) { props.Add(new LogEventProperty("host", new ScalarValue(_host))); }
-            if (_tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(_tags))); }
-            logEvent.AddOrUpdateProperty(new LogEventProperty("ddproperties", new StructureValue(props)));
+            logEvent.AddOrUpdateProperty(_ddProperties);
         }
     }
 }

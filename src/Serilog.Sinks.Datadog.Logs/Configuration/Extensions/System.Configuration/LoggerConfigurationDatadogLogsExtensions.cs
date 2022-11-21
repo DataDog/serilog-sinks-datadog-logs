@@ -50,7 +50,8 @@ namespace Serilog
             TimeSpan? batchPeriod = null,
             int? queueLimit = null,
             Action<Exception> exceptionHandler = null,
-            bool detectTCPDisconnection = false)
+            bool detectTCPDisconnection = false,
+            ITextFormatter formatter = null)
         {
             if (loggerConfiguration == null)
             {
@@ -62,7 +63,7 @@ namespace Serilog
             }
 
             configuration = (configuration != null) ? configuration : new DatadogConfiguration();
-            var sink = DatadogSink.Create(apiKey, source, service, host, tags, configuration, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection);
+            var sink = DatadogSink.Create(apiKey, source, service, host, tags, configuration, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, formatter);
 
             return loggerConfiguration.Sink(sink, logLevel);
         }
