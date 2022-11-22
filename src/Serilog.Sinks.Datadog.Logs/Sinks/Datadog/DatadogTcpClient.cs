@@ -25,7 +25,7 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogTcpClient : IDatadogClient
     {
         private readonly DatadogConfiguration _config;
-        private readonly ITextFormatter _formatter;
+        private readonly DatadogLogRenderer _renderer;
         private readonly string _apiKey;
         private readonly bool _detectTCPDisconnection;
         private TcpClient _client;
@@ -57,10 +57,10 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
 
-        public DatadogTcpClient(DatadogConfiguration config, ITextFormatter formatter, string apiKey, bool detectTCPDisconnection)
+        public DatadogTcpClient(DatadogConfiguration config, DatadogLogRenderer renderer, string apiKey, bool detectTCPDisconnection)
         {
             _config = config;
-            _formatter = formatter;
+            _renderer = renderer;
             _apiKey = apiKey;
             _detectTCPDisconnection = detectTCPDisconnection;
         }
@@ -90,14 +90,22 @@ namespace Serilog.Sinks.Datadog.Logs
         public async Task WriteAsync(IEnumerable<LogEvent> events)
         {
             var payloadBuilder = new StringBuilder();
+            List<LogEvent> droppedEvents = new List<LogEvent>();
             foreach (var logEvent in events)
             {
-                payloadBuilder.Append(_apiKey + WhiteSpace);
-                var body = new StringBuilder();
-                var writer = new System.IO.StringWriter(body);
-                _formatter.Format(logEvent, writer);
-                payloadBuilder.Append(body.ToString());
-                payloadBuilder.Append(MessageDelimiter);
+                try 
+                {
+                    var payloadString = _renderer.RenderDatadogEvent(logEvent);
+
+                    payloadBuilder.Append(_apiKey + WhiteSpace);
+                    payloadBuilder.Append(payloadString);
+                    payloadBuilder.Append(MessageDelimiter);
+                } 
+                catch(TooBigLogEventException) 
+                {
+                    droppedEvents.Add(logEvent);
+                    continue; // The log is dropped because the backend would not accept it
+                }
             }
             string payload = payloadBuilder.ToString();
 
@@ -126,6 +134,11 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     byte[] data = UTF8.GetBytes(payload);
                     _stream.Write(data, 0, data.Length);
+
+                    if (droppedEvents.Count > 0)
+                    {
+                        throw new TooBigLogEventException(droppedEvents);
+                    }
                     return;
                 }
                 catch (Exception e)

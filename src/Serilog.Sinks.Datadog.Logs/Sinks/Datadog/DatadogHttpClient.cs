@@ -20,13 +20,12 @@ namespace Serilog.Sinks.Datadog.Logs
         private const string _version = "0.3.8";
         private const string _content = "application/json";
         private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
-        private const int _maxMessageSize = 256 * 1024;
+        
 
         private readonly DatadogConfiguration _config;
         private readonly string _url;
-        private readonly ITextFormatter _formatter;
+        private readonly DatadogLogRenderer _renderer;
         private readonly HttpClient _client;
-        private readonly MetadataEnricher _metadataEnricher;
 
         /// <summary>
         /// Max number of retries when sending failed.
@@ -38,7 +37,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int MaxBackoff = 30;
 
-        public DatadogHttpClient(DatadogConfiguration config, MetadataEnricher metadataEnricher, ITextFormatter formatter, string apiKey)
+        public DatadogHttpClient(DatadogConfiguration config, DatadogLogRenderer renderer, string apiKey)
         {
             _config = config;
             _client = new HttpClient();
@@ -46,8 +45,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");
             _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", _version);
             _url = $"{config.Url}/api/v2/logs";
-            _metadataEnricher = metadataEnricher;
-            _formatter = formatter;
+            _renderer = renderer;
         }
 
         public Task WriteAsync(IEnumerable<LogEvent> events)
@@ -78,28 +76,28 @@ namespace Serilog.Sinks.Datadog.Logs
             var logEvents = new List<LogEvent>(eventsQuantity);
             foreach (var logEvent in events)
             {
-                _metadataEnricher.Enrich(logEvent);
-                var payload = new StringBuilder();
-                var writer = new System.IO.StringWriter(payload);
-                _formatter.Format(logEvent, writer);
-                Console.WriteLine(payload.ToString());
-                var logSize = Encoding.UTF8.GetByteCount(payload.ToString());
-                if (logSize > _maxMessageSize)
+                try 
+                {
+                    var payload = _renderer.RenderDatadogEvent(logEvent);
+                    var payloadSize = Encoding.UTF8.GetByteCount(payload);
+
+                    if (currentSize + payloadSize > _maxSize)
+                    {
+                        // Flush the chunkBuffer to the chunks and reset the chunkBuffer
+                        serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
+                        chunkBuffer.Clear();
+                        logEvents.Clear();
+                        currentSize = 0;
+                    }
+                    chunkBuffer.Add(payload);
+                    logEvents.Add(logEvent);
+                    currentSize += payloadSize;
+                } 
+                catch(TooBigLogEventException) 
                 {
                     serializedEvents.TooBigLogEvents.Add(logEvent);
                     continue;  // The log is dropped because the backend would not accept it
                 }
-                if (currentSize + logSize > _maxSize)
-                {
-                    // Flush the chunkBuffer to the chunks and reset the chunkBuffer
-                    serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
-                    chunkBuffer.Clear();
-                    logEvents.Clear();
-                    currentSize = 0;
-                }
-                chunkBuffer.Add(payload.ToString());
-                logEvents.Add(logEvent);
-                currentSize += logSize;
             }
             if (chunkBuffer.Count != 0)
             {
