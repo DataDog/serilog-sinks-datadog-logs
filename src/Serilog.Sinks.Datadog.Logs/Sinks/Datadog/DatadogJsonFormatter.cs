@@ -3,7 +3,6 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Serilog.Events;
@@ -13,24 +12,6 @@ using Serilog.Parsing;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
-    // public class DatadogJsonFormatter: ExpressionTemplate
-    // {
-    //     public DatadogJsonFormatter() : base(@"{ {
-    //         Timestamp: @t,
-    //         level: @l,
-    //         MessageTemplate: @mt,
-    //         message: @m, 
-    //         Properties: {..@p, ddproperties: undefined()},
-    //         Renderings: @r, 
-    //         Exception: @x,
-    //         EventId: @i,
-    //         ddsource: @p['ddproperties']['ddsource'], 
-    //         service: @p['ddproperties']['service'], 
-    //         host: @p['ddproperties']['host'], 
-    //         ddtags: @p['ddproperties']['ddtags']} 
-    //     }") {}
-    // }
-
     public class DatadogJsonFormatter: ITextFormatter
     {
 
@@ -41,26 +22,27 @@ namespace Serilog.Sinks.Datadog.Logs
 
             output.Write("{");
 
-            // Timestamp
-            writeKeyValue("timestamp", logEvent.Timestamp.UtcDateTime.ToString("O"), output);
+            writeKeyValue("timestamp", logEvent.Timestamp.ToString("O"), output);
 
-            // Message
             var message = logEvent.MessageTemplate.Render(logEvent.Properties);
             writeKeyValue("message", message, output);
 
+            writeKeyValue("MessageTemplate", logEvent.MessageTemplate.ToString(), output);
+            writeKeyValue("level", logEvent.Level.ToString(), output);
+
             // Properties 
             JsonValueFormatter.WriteQuotedJsonString("Properties", output);
-            output.Write("{");
+            output.Write(":{");
 
             var propCount = 0;
             foreach (var property in logEvent.Properties)
             {
-                writeKeyValue(property.Key, property.Value, output, propCount != logEvent.Properties.Count);
                 propCount++;
+                writeKeyValue(property.Key, property.Value, output, propCount == logEvent.Properties.Count);
             }
             output.Write("}");
 
-
+            // Renderings
             var tokensWithFormat = logEvent.MessageTemplate.Tokens
                 .OfType<PropertyToken>()
                 .Where(pt => pt.Format != null);
