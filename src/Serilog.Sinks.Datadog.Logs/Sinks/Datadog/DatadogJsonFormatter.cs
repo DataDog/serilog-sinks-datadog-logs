@@ -30,6 +30,11 @@ namespace Serilog.Sinks.Datadog.Logs
             writeKeyValue("MessageTemplate", logEvent.MessageTemplate.ToString(), output);
             writeKeyValue("level", logEvent.Level.ToString(), output);
 
+            if (logEvent.Exception != null)
+            {
+                writeKeyValue("Exception", logEvent.Exception.ToString(), output);
+            }
+
             // Properties 
             JsonValueFormatter.WriteQuotedJsonString("Properties", output);
             output.Write(":{");
