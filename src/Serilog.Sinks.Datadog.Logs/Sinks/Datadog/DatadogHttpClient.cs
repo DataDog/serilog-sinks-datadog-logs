@@ -79,8 +79,6 @@ namespace Serilog.Sinks.Datadog.Logs
                 try 
                 {
                     var payload = _renderer.RenderDatadogEvent(logEvent);
-
-                    Console.WriteLine(payload);
                     var payloadSize = Encoding.UTF8.GetByteCount(payload);
 
                     if (currentSize + payloadSize > _maxSize)

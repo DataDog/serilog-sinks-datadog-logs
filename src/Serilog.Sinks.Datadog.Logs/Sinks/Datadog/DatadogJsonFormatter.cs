@@ -19,7 +19,7 @@ namespace Serilog.Sinks.Datadog.Logs
         public void Format(LogEvent logEvent, TextWriter output)
         {
             // Largely based on https://github.com/serilog/serilog-formatting-compact/blob/dev/src/Serilog.Formatting.Compact/Formatting/Compact/RenderedCompactJsonFormatter.cs
-
+            // TODO: Replace with https://github.com/serilog/serilog-expressions if we ever drop the unsupported .net versions. 
             output.Write("{");
 
             writeKeyValue("timestamp", logEvent.Timestamp.ToString("O"), output);
