@@ -6,10 +6,8 @@
 using Serilog.Events;
 using System.Collections.Generic;
 using System.Text;
-using Serilog.Parsing;
 using Serilog.Formatting;
 using Serilog.Formatting.Json;
-using Serilog.Templates;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
