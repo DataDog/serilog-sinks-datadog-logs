@@ -149,7 +149,7 @@ public class DatadogJsonNoTemplateFormatter: ExpressionTemplate
 }
 ```
 
-If you cannot use Serilog-expressions due to framework compatibility - you may use `JsonValueFormatter` or a default implementation: [serilog-formatting-compact](https://github.com/serilog/serilog-formatting-compact)
+If you cannot use Serilog-expressions due to framework compatibility - you can implement your own with `JsonValueFormatter` or a default implementation ex: [serilog-formatting-compact](https://github.com/serilog/serilog-formatting-compact)
 
 
 ## Support Configuration Options

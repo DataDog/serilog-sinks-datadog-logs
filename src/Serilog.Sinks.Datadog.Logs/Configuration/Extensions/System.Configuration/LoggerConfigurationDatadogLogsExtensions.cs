@@ -65,7 +65,7 @@ namespace Serilog
             }
 
             configuration = (configuration != null) ? configuration : new DatadogConfiguration();
-            var sink = DatadogSink.Create(apiKey, source, service, host, tags, configuration, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, formatter);
+            var sink = DatadogSink.Create(apiKey, source, service, host, tags, configuration, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, null, formatter);
 
             return loggerConfiguration.Sink(sink, logLevel);
         }
