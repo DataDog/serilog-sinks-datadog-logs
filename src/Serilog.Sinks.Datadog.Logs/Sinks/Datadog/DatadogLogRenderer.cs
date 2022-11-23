@@ -5,22 +5,24 @@
 
 using Serilog.Events;
 using System.Collections.Generic;
-using Serilog.Templates;
 using System.Text;
 using Serilog.Parsing;
 using Serilog.Formatting;
+using Serilog.Formatting.Json;
+using Serilog.Templates;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogLogRenderer
     {
         private const string CSHARP = "csharp";
-        private const int _maxMessageSize = 25;
+        private const int _maxMessageSize = 256 * 1000;
         private readonly List<LogEventProperty>  _props;
         private readonly ITextFormatter _formatter;
 
         public DatadogLogRenderer(string source, string service, string host, string[] tags, ITextFormatter formatter)
         {
+
             var props = new List<LogEventProperty> {
                 new LogEventProperty("ddsource", new ScalarValue(source ?? CSHARP)),
             };
@@ -39,21 +41,30 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter.Format(logEvent, payloadWriter);
             var rawPayload = payloadWriter.ToString();
 
-
             var rawLogSize = Encoding.UTF8.GetByteCount(rawPayload);
             if (rawLogSize > _maxMessageSize) {
                 throw new TooBigLogEventException(new List<LogEvent>{ logEvent });
             }
-            
-            // Render the dd event - a private json structure with the user event in the `message` field and 
-            // Datadog specific feilds at the root level. The message field can accept any format. By default 
-            // Serilog sink will emit json - but the user can change change this format. 
-            var ddEvent = new LogEvent(System.DateTimeOffset.Now, LogEventLevel.Information, null, new MessageTemplate(payloadWriter.ToString(), new List<MessageTemplateToken>()), _props);
-            var t = new ExpressionTemplate("{ {..@p, message: @mt} }\n");
 
+            // Render the dd event - a private json structure with the user event in the `message` field and 
+            // Datadog specific fields at the root level. The message field can accept any format. By default 
+            // Serilog sink will emit json - but the user can change change this format. 
+            var formatter = new JsonValueFormatter();
             var ddPayload = new StringBuilder();
             var ddPayloadWriter = new System.IO.StringWriter(ddPayload);
-            t.Format(ddEvent, ddPayloadWriter);
+
+            ddPayloadWriter.Write("{");
+            foreach (var prop in _props) {
+                JsonValueFormatter.WriteQuotedJsonString(prop.Name, ddPayloadWriter);
+                ddPayloadWriter.Write(":");
+                formatter.Format(prop.Value, ddPayloadWriter);
+                ddPayloadWriter.Write(",");
+            }
+            JsonValueFormatter.WriteQuotedJsonString("message", ddPayloadWriter);
+            ddPayloadWriter.Write(":");
+            JsonValueFormatter.WriteQuotedJsonString(rawPayload, ddPayloadWriter);
+
+            ddPayloadWriter.Write("}");
 
             return ddPayloadWriter.ToString();
         }

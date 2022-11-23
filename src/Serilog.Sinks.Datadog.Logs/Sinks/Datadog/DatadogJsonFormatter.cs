@@ -3,25 +3,112 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
 
-using Serilog.Templates;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Serilog.Events;
+using Serilog.Formatting;
+using Serilog.Formatting.Json;
+using Serilog.Parsing;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
-    public class DatadogJsonFormatter: ExpressionTemplate
+    // public class DatadogJsonFormatter: ExpressionTemplate
+    // {
+    //     public DatadogJsonFormatter() : base(@"{ {
+    //         Timestamp: @t,
+    //         level: @l,
+    //         MessageTemplate: @mt,
+    //         message: @m, 
+    //         Properties: {..@p, ddproperties: undefined()},
+    //         Renderings: @r, 
+    //         Exception: @x,
+    //         EventId: @i,
+    //         ddsource: @p['ddproperties']['ddsource'], 
+    //         service: @p['ddproperties']['service'], 
+    //         host: @p['ddproperties']['host'], 
+    //         ddtags: @p['ddproperties']['ddtags']} 
+    //     }") {}
+    // }
+
+    public class DatadogJsonFormatter: ITextFormatter
     {
-        public DatadogJsonFormatter() : base(@"{ {
-            Timestamp: @t,
-            level: @l,
-            MessageTemplate: @mt,
-            message: @m, 
-            Properties: {..@p, ddproperties: undefined()},
-            Renderings: @r, 
-            Exception: @x,
-            EventId: @i,
-            ddsource: @p['ddproperties']['ddsource'], 
-            service: @p['ddproperties']['service'], 
-            host: @p['ddproperties']['host'], 
-            ddtags: @p['ddproperties']['ddtags']} 
-        }") {}
+
+        readonly JsonValueFormatter _valueFormatter = new JsonValueFormatter();
+        public void Format(LogEvent logEvent, TextWriter output)
+        {
+            // Largely based on https://github.com/serilog/serilog-formatting-compact/blob/dev/src/Serilog.Formatting.Compact/Formatting/Compact/RenderedCompactJsonFormatter.cs
+
+            output.Write("{");
+
+            // Timestamp
+            writeKeyValue("timestamp", logEvent.Timestamp.UtcDateTime.ToString("O"), output);
+
+            // Message
+            var message = logEvent.MessageTemplate.Render(logEvent.Properties);
+            writeKeyValue("message", message, output);
+
+            // Properties 
+            JsonValueFormatter.WriteQuotedJsonString("Properties", output);
+            output.Write("{");
+
+            var propCount = 0;
+            foreach (var property in logEvent.Properties)
+            {
+                writeKeyValue(property.Key, property.Value, output, propCount != logEvent.Properties.Count);
+                propCount++;
+            }
+            output.Write("}");
+
+
+            var tokensWithFormat = logEvent.MessageTemplate.Tokens
+                .OfType<PropertyToken>()
+                .Where(pt => pt.Format != null);
+
+            if (tokensWithFormat.Any())
+            {
+                output.Write(",\"Renderings\":[");
+                var delim = "";
+                foreach (var r in tokensWithFormat)
+                {
+                    output.Write(delim);
+                    delim = ",";
+                    var space = new StringWriter();
+                    r.Render(logEvent.Properties, space);
+                    JsonValueFormatter.WriteQuotedJsonString(space.ToString(), output);
+                }
+                output.Write(']');
+            }
+
+            output.Write("}");
+        }
+
+
+        private void writeProperty(LogEventProperty property, TextWriter output, bool isLast = false) 
+        {
+            writeKeyValue(property.Name, property.Value, output, isLast);
+        }
+        private void writeKeyValue(string key, LogEventPropertyValue val, TextWriter output, bool isLast = false) 
+        {
+            JsonValueFormatter.WriteQuotedJsonString(key, output);
+            output.Write(":");
+            _valueFormatter.Format(val, output);
+            if (!isLast)
+            {
+               output.Write(","); 
+            }
+        }
+
+        private void writeKeyValue(string key, string val, TextWriter output, bool isLast = false) 
+        {
+            JsonValueFormatter.WriteQuotedJsonString(key, output);
+            output.Write(":");
+            JsonValueFormatter.WriteQuotedJsonString(val, output);
+            if (!isLast)
+            {
+               output.Write(","); 
+            }
+        }
     }
+
 }
