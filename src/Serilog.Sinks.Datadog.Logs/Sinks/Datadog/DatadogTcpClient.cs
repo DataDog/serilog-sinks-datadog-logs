@@ -93,15 +93,15 @@ namespace Serilog.Sinks.Datadog.Logs
             List<LogEvent> droppedEvents = new List<LogEvent>();
             foreach (var logEvent in events)
             {
-                try 
+                try
                 {
                     var payloadString = _renderer.RenderDatadogEvent(logEvent);
 
                     payloadBuilder.Append(_apiKey + WhiteSpace);
                     payloadBuilder.Append(payloadString);
                     payloadBuilder.Append(MessageDelimiter);
-                } 
-                catch(TooBigLogEventException) 
+                }
+                catch (TooBigLogEventException)
                 {
                     droppedEvents.Add(logEvent);
                     continue; // The log is dropped because the backend would not accept it

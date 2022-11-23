@@ -15,7 +15,7 @@ namespace Serilog.Sinks.Datadog.Logs
     {
         private const string CSHARP = "csharp";
         private const int _maxMessageSize = 256 * 1000;
-        private readonly List<LogEventProperty>  _props;
+        private readonly List<LogEventProperty> _props;
         private readonly ITextFormatter _formatter;
 
         public DatadogLogRenderer(string source, string service, string host, string[] tags, ITextFormatter formatter)
@@ -31,7 +31,8 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter = formatter;
         }
 
-        public string RenderDatadogEvent(LogEvent logEvent) {
+        public string RenderDatadogEvent(LogEvent logEvent)
+        {
 
             // Render the payload with the default (or user supplied) ITextFormatter
             var payload = new StringBuilder();
@@ -40,8 +41,9 @@ namespace Serilog.Sinks.Datadog.Logs
             var rawPayload = payloadWriter.ToString();
 
             var rawLogSize = Encoding.UTF8.GetByteCount(rawPayload);
-            if (rawLogSize > _maxMessageSize) {
-                throw new TooBigLogEventException(new List<LogEvent>{ logEvent });
+            if (rawLogSize > _maxMessageSize)
+            {
+                throw new TooBigLogEventException(new List<LogEvent> { logEvent });
             }
 
             // Render the dd event - a private json structure with the user event in the `message` field and 
@@ -52,7 +54,8 @@ namespace Serilog.Sinks.Datadog.Logs
             var ddPayloadWriter = new System.IO.StringWriter(ddPayload);
 
             ddPayloadWriter.Write("{");
-            foreach (var prop in _props) {
+            foreach (var prop in _props)
+            {
                 JsonValueFormatter.WriteQuotedJsonString(prop.Name, ddPayloadWriter);
                 ddPayloadWriter.Write(":");
                 formatter.Format(prop.Value, ddPayloadWriter);

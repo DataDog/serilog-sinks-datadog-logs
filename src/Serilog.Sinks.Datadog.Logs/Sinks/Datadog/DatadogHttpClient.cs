@@ -20,7 +20,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private const string _version = "0.3.8";
         private const string _content = "application/json";
         private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
-        
+
 
         private readonly DatadogConfiguration _config;
         private readonly string _url;
@@ -76,7 +76,7 @@ namespace Serilog.Sinks.Datadog.Logs
             var logEvents = new List<LogEvent>(eventsQuantity);
             foreach (var logEvent in events)
             {
-                try 
+                try
                 {
                     var payload = _renderer.RenderDatadogEvent(logEvent);
                     var payloadSize = Encoding.UTF8.GetByteCount(payload);
@@ -92,8 +92,8 @@ namespace Serilog.Sinks.Datadog.Logs
                     chunkBuffer.Add(payload);
                     logEvents.Add(logEvent);
                     currentSize += payloadSize;
-                } 
-                catch(TooBigLogEventException) 
+                }
+                catch (TooBigLogEventException)
                 {
                     serializedEvents.TooBigLogEvents.Add(logEvent);
                     continue;  // The log is dropped because the backend would not accept it

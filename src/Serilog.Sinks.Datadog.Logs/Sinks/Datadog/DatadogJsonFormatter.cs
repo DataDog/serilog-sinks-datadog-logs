@@ -12,7 +12,7 @@ using Serilog.Parsing;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
-    public class DatadogJsonFormatter: ITextFormatter
+    public class DatadogJsonFormatter : ITextFormatter
     {
 
         readonly JsonValueFormatter _valueFormatter = new JsonValueFormatter();
@@ -71,29 +71,29 @@ namespace Serilog.Sinks.Datadog.Logs
         }
 
 
-        private void writeProperty(LogEventProperty property, TextWriter output, bool isLast = false) 
+        private void writeProperty(LogEventProperty property, TextWriter output, bool isLast = false)
         {
             writeKeyValue(property.Name, property.Value, output, isLast);
         }
-        private void writeKeyValue(string key, LogEventPropertyValue val, TextWriter output, bool isLast = false) 
+        private void writeKeyValue(string key, LogEventPropertyValue val, TextWriter output, bool isLast = false)
         {
             JsonValueFormatter.WriteQuotedJsonString(key, output);
             output.Write(":");
             _valueFormatter.Format(val, output);
             if (!isLast)
             {
-               output.Write(","); 
+                output.Write(",");
             }
         }
 
-        private void writeKeyValue(string key, string val, TextWriter output, bool isLast = false) 
+        private void writeKeyValue(string key, string val, TextWriter output, bool isLast = false)
         {
             JsonValueFormatter.WriteQuotedJsonString(key, output);
             output.Write(":");
             JsonValueFormatter.WriteQuotedJsonString(val, output);
             if (!isLast)
             {
-               output.Write(","); 
+                output.Write(",");
             }
         }
     }
