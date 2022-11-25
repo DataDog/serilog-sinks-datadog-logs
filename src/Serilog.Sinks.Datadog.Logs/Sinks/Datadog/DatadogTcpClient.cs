@@ -108,7 +108,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
             }
             string payload = payloadBuilder.ToString();
-
+            var dataSent = false;
             for (int retry = 0; retry < MaxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(retry, 2), MaxBackoff);
@@ -134,12 +134,8 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     byte[] data = UTF8.GetBytes(payload);
                     _stream.Write(data, 0, data.Length);
-
-                    if (droppedEvents.Count > 0)
-                    {
-                        throw new TooBigLogEventException(droppedEvents);
-                    }
-                    return;
+                    dataSent = true;
+                    break;
                 }
                 catch (Exception e)
                 {
@@ -147,7 +143,14 @@ namespace Serilog.Sinks.Datadog.Logs
                     SelfLog.WriteLine("Could not send data to Datadog: {0}", e);
                 }
             }
-            SelfLog.WriteLine("Could not send payload to Datadog: {0}", payload);
+            if (!dataSent)
+            {
+                SelfLog.WriteLine("Could not send payload to Datadog: {0}", payload);
+            }
+            if (droppedEvents.Count > 0)
+            {
+                throw new TooBigLogEventException(droppedEvents);
+            }
         }
 
         private void CloseConnection()
