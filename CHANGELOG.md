@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.4.0
+* Add support for custom `ITextFormatter`.
+
 ## 0.3.8
 * Update Serilog.Sinks.PeriodicBatching to `3.0.0`. Thanks @dominikus1993 
   
