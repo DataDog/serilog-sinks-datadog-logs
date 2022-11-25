@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using Serilog.Events;
 using System.Net.NetworkInformation;
 using System.Net;
+using Serilog.Formatting;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -24,7 +25,7 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogTcpClient : IDatadogClient
     {
         private readonly DatadogConfiguration _config;
-        private readonly LogFormatter _formatter;
+        private readonly DatadogLogRenderer _renderer;
         private readonly string _apiKey;
         private readonly bool _detectTCPDisconnection;
         private TcpClient _client;
@@ -56,10 +57,10 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
 
-        public DatadogTcpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey, bool detectTCPDisconnection)
+        public DatadogTcpClient(DatadogConfiguration config, DatadogLogRenderer renderer, string apiKey, bool detectTCPDisconnection)
         {
             _config = config;
-            _formatter = formatter;
+            _renderer = renderer;
             _apiKey = apiKey;
             _detectTCPDisconnection = detectTCPDisconnection;
         }
@@ -89,14 +90,25 @@ namespace Serilog.Sinks.Datadog.Logs
         public async Task WriteAsync(IEnumerable<LogEvent> events)
         {
             var payloadBuilder = new StringBuilder();
+            List<LogEvent> droppedEvents = new List<LogEvent>();
             foreach (var logEvent in events)
             {
-                payloadBuilder.Append(_apiKey + WhiteSpace);
-                payloadBuilder.Append(_formatter.FormatMessage(logEvent));
-                payloadBuilder.Append(MessageDelimiter);
+                try
+                {
+                    var payloadString = _renderer.RenderDatadogEvent(logEvent);
+
+                    payloadBuilder.Append(_apiKey + WhiteSpace);
+                    payloadBuilder.Append(payloadString);
+                    payloadBuilder.Append(MessageDelimiter);
+                }
+                catch (TooBigLogEventException)
+                {
+                    droppedEvents.Add(logEvent);
+                    continue; // The log is dropped because the backend would not accept it
+                }
             }
             string payload = payloadBuilder.ToString();
-
+            var dataSent = false;
             for (int retry = 0; retry < MaxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(retry, 2), MaxBackoff);
@@ -122,7 +134,8 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     byte[] data = UTF8.GetBytes(payload);
                     _stream.Write(data, 0, data.Length);
-                    return;
+                    dataSent = true;
+                    break;
                 }
                 catch (Exception e)
                 {
@@ -130,7 +143,14 @@ namespace Serilog.Sinks.Datadog.Logs
                     SelfLog.WriteLine("Could not send data to Datadog: {0}", e);
                 }
             }
-            SelfLog.WriteLine("Could not send payload to Datadog: {0}", payload);
+            if (!dataSent)
+            {
+                SelfLog.WriteLine("Could not send payload to Datadog: {0}", payload);
+            }
+            if (droppedEvents.Count > 0)
+            {
+                throw new TooBigLogEventException(droppedEvents);
+            }
         }
 
         private void CloseConnection()

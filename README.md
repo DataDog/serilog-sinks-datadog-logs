@@ -76,22 +76,20 @@ In the platform, the log looks like as the following JSON Object:
 
 ```json
 {
+    "message": "Processed { Latitude: 25, Longitude: 134 } in 034 ms.",
     "MessageTemplate": "Processed {@Position} in {Elapsed:000} ms.",
-    "Level": "Information",
-    "Timestamp": "2016-09-02T15:02:29.648Z",
-    "Renderings": {
-        "Elapsed": [{
-            "Format": "000",
-            "Rendering": "034"
-        }]
-    },
+    "timestamp": "2022-11-23T09:48:56.0262350-05:00",
+    "level": "Information",
     "Properties": {
         "Position": {
             "Latitude": 25,
             "Longitude": 134
         },
         "Elapsed": 34
-    }
+    },
+    "Renderings": [
+        "034"
+    ]
 }
 ```
 
@@ -133,6 +131,27 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
 
 **NOTE:** the `configuration` section is optional so that you may override the defaults. 
 
+## Using a custom log formatter
+You can implement a [custom `ITextFormatter` ](https://github.com/serilog/serilog/blob/dev/src/Serilog/Formatting/ITextFormatter.cs)and pass it to the sink to change the format of your logs. This is useful if you want to add/remove/modify fields from the final JSON payload, or emit non-json logs to Datadog. 
+
+There are several options for implementing custom formatters. The easiest way is to use [Serilog-expressions](https://github.com/serilog/serilog-expressions). Below is an example of a Serilog-expression `ITextFormatter` that drops the `MessageTemplate` field: 
+
+```C#
+public class DatadogJsonNoTemplateFormatter: ExpressionTemplate
+{
+    public DatadogJsonNoTemplateFormatter() : base(@"{ {
+        Timestamp: @t,
+        level: @l,
+        message: @m, 
+        Properties: {..@p},
+        Renderings: @r}
+    }") {}
+}
+```
+
+If you cannot use Serilog-expressions due to framework compatibility - you can implement your own with `JsonValueFormatter` or a default implementation ex: [serilog-formatting-compact](https://github.com/serilog/serilog-formatting-compact)
+
+
 ## Support Configuration Options
 
 [`DatadogLogs`](https://github.com/DataDog/serilog-sinks-datadog-logs/blob/master/src/Serilog.Sinks.Datadog.Logs/Configuration/Extensions/System.Configuration/LoggerConfigurationDatadogLogsExtensions.cs#L40) supports the following arguments:
@@ -151,6 +170,7 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
 | `queueLimit`             | `int`                  | Maximum number of events to hold in the sink's internal queue, or `null` for an unbounded queue. The default is `10000` |
 | `exceptionHandler`       | `Action<Exception>`    | This function is called when an exception occurs when using `DatadogConfiguration.UseTCP=false` (the default configuration). |
 | `detectTCPDisconnection` | `bool`                 | Detect when the TCP connection is lost and recreate a new connection. |
+| `formatter`              | `ITextFormatter`       | A custom formatter implementation to change the format of the logs |
 
 ## How to build the NuGet package
 

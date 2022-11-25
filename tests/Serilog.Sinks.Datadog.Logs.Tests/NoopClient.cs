@@ -13,9 +13,10 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
     public class NoopClient : IDatadogClient
     {
         private readonly string _apiKey;
-        private readonly LogFormatter _formatter;
+        private readonly DatadogLogRenderer _formatter;
+        public List<string> SentPayloads = new List<string>();
 
-        public NoopClient(string apiKey, LogFormatter formatter)
+        public NoopClient(string apiKey, DatadogLogRenderer formatter)
         {
             _apiKey = apiKey;
             _formatter = formatter;
@@ -24,23 +25,11 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         public Task WriteAsync(IEnumerable<LogEvent> events)
         {
 
-
-            var payloadBuilder = new StringBuilder();
-            Assert.DoesNotThrow(() => {
-
-                foreach (var logEvent in events)
-                {
-                    payloadBuilder.Append(_apiKey).Append(' ');
-                    var formatted = _formatter.FormatMessage(logEvent);
-                    Assert.IsNotEmpty(formatted);
-                    payloadBuilder.Append(formatted);
-                    payloadBuilder.Append('\n');
-                }
-            });
-            var payload = payloadBuilder.ToString();
-            Assert.IsNotEmpty(payload);
-
-
+            foreach (var logEvent in events)
+            {
+                var formatted = _formatter.RenderDatadogEvent(logEvent);
+                SentPayloads.Add(formatted);
+            }
             return Task.CompletedTask;
         }
 

@@ -9,9 +9,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Serilog.Context;
 using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Sinks.PeriodicBatching;
 
 [assembly:
@@ -43,10 +45,12 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags,
             DatadogConfiguration config, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false,
-            IDatadogClient client = null)
+            IDatadogClient client = null, ITextFormatter formatter = null)
         {
+            formatter = formatter ?? new DatadogJsonFormatter();
+            var enricher = new DatadogLogRenderer(source, service, host, tags, formatter);
             _client = client ??
-                      CreateDatadogClient(apiKey, source, service, host, tags, config, detectTCPDisconnection);
+                      CreateDatadogClient(apiKey, enricher, config, detectTCPDisconnection);
             _exceptionHandler = exceptionHandler;
         }
 
@@ -61,7 +65,9 @@ namespace Serilog.Sinks.Datadog.Logs
             TimeSpan? batchPeriod = null,
             int? queueLimit = null,
             Action<Exception> exceptionHandler = null,
-            bool detectTCPDisconnection = false, IDatadogClient client = null)
+            bool detectTCPDisconnection = false,
+            IDatadogClient client = null,
+            ITextFormatter formatter = null)
         {
             var options = new PeriodicBatchingSinkOptions()
             {
@@ -75,7 +81,7 @@ namespace Serilog.Sinks.Datadog.Logs
             }
 
             var sink = new DatadogSink(apiKey, source, service, host, tags, config, exceptionHandler,
-                detectTCPDisconnection, client);
+                detectTCPDisconnection, client, formatter);
 
             return new PeriodicBatchingSink(sink, options);
         }
@@ -119,17 +125,15 @@ namespace Serilog.Sinks.Datadog.Logs
             _client.Close();
         }
 
-        private static IDatadogClient CreateDatadogClient(string apiKey, string source, string service, string host,
-            string[] tags, DatadogConfiguration configuration, bool detectTCPDisconnection)
+        private static IDatadogClient CreateDatadogClient(string apiKey, DatadogLogRenderer renderer, DatadogConfiguration configuration, bool detectTCPDisconnection)
         {
-            var logFormatter = new LogFormatter(source, service, host, tags);
             if (configuration.UseTCP)
             {
-                return new DatadogTcpClient(configuration, logFormatter, apiKey, detectTCPDisconnection);
+                return new DatadogTcpClient(configuration, renderer, apiKey, detectTCPDisconnection);
             }
             else
             {
-                return new DatadogHttpClient(configuration, logFormatter, apiKey);
+                return new DatadogHttpClient(configuration, renderer, apiKey);
             }
         }
 
