@@ -8,17 +8,19 @@ using System.Collections.Generic;
 using System.Text;
 using Serilog.Formatting;
 using Serilog.Formatting.Json;
+using System.Linq;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogLogRenderer
     {
         private const string CSHARP = "csharp";
-        private const int _maxMessageSize = 256 * 1000;
+        private int _maxMessageSize;
         private readonly List<LogEventProperty> _props;
         private readonly ITextFormatter _formatter;
+        private readonly byte[] _truncatedFlag = Encoding.UTF8.GetBytes("...TRUNCATED...");
 
-        public DatadogLogRenderer(string source, string service, string host, string[] tags, ITextFormatter formatter)
+        public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter)
         {
 
             var props = new List<LogEventProperty> {
@@ -28,10 +30,11 @@ namespace Serilog.Sinks.Datadog.Logs
             if (host != null) { props.Add(new LogEventProperty("host", new ScalarValue(host))); }
             if (tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", tags)))); }
             _props = props;
+            _maxMessageSize = maxMessageSize;
             _formatter = formatter;
         }
 
-        public string RenderDatadogEvent(LogEvent logEvent)
+        public string[] RenderDatadogEvents(LogEvent logEvent)
         {
 
             // Render the payload with the default (or user supplied) ITextFormatter
@@ -40,12 +43,40 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter.Format(logEvent, payloadWriter);
             var rawPayload = payloadWriter.ToString();
 
-            var rawLogSize = Encoding.UTF8.GetByteCount(rawPayload);
-            if (rawLogSize > _maxMessageSize)
+            var truncated = TruncateIfNeeded(rawPayload);
+            return truncated.Select(x => ToDDPayload(Encoding.UTF8.GetString(x))).ToArray();
+        }
+
+        internal IEnumerable<byte[]> TruncateIfNeeded(string rawPayload) {
+            
+            var bytes = Encoding.UTF8.GetBytes(rawPayload);
+
+            var grouped = Enumerable.Range(0, (bytes.Count() / _maxMessageSize) + 1)
+                .Select((b, i) => bytes.Skip(i * _maxMessageSize)
+                                       .Take(_maxMessageSize))
+                .Where(x => x.Count() > 0);
+
+            if (grouped.Count() > 1)
             {
-                throw new TooBigLogEventException(new List<LogEvent> { logEvent });
+                var count = grouped.Count();
+                grouped = grouped.Select((x, i) =>
+                {
+                    if (i == 0)
+                    {
+                        return x.Concat(_truncatedFlag);
+                    }
+                    else if (i == count - 1)
+                    {
+                        return _truncatedFlag.Concat(x);
+                    }
+                     return _truncatedFlag.Concat(x.Concat(_truncatedFlag));
+                });
             }
 
+            return grouped.Select(x => x.ToArray());
+        }
+
+        internal string ToDDPayload(string rawPayload) {
             // Render the dd event - a private json structure with the user event in the `message` field and 
             // Datadog specific fields at the root level. The message field can accept any format. By default 
             // Serilog sink will emit json - but the user can change change this format. 

@@ -90,21 +90,14 @@ namespace Serilog.Sinks.Datadog.Logs
         public async Task WriteAsync(IEnumerable<LogEvent> events)
         {
             var payloadBuilder = new StringBuilder();
-            List<LogEvent> droppedEvents = new List<LogEvent>();
             foreach (var logEvent in events)
             {
-                try
+                var messages = _renderer.RenderDatadogEvents(logEvent);
+                foreach (var messsage in messages)
                 {
-                    var payloadString = _renderer.RenderDatadogEvent(logEvent);
-
                     payloadBuilder.Append(_apiKey + WhiteSpace);
-                    payloadBuilder.Append(payloadString);
+                    payloadBuilder.Append(messsage);
                     payloadBuilder.Append(MessageDelimiter);
-                }
-                catch (TooBigLogEventException)
-                {
-                    droppedEvents.Add(logEvent);
-                    continue; // The log is dropped because the backend would not accept it
                 }
             }
             string payload = payloadBuilder.ToString();
@@ -146,10 +139,6 @@ namespace Serilog.Sinks.Datadog.Logs
             if (!dataSent)
             {
                 SelfLog.WriteLine("Could not send payload to Datadog: {0}", payload);
-            }
-            if (droppedEvents.Count > 0)
-            {
-                throw new TooBigLogEventException(droppedEvents);
             }
         }
 

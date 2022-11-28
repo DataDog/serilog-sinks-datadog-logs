@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using Serilog.Events;
@@ -24,7 +26,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         public void TestDefaultFormatter()
         {
             const string apiKey = "NOT_AN_API_KEY";
-            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, new DatadogJsonFormatter());
+            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, 256 * 1000, new DatadogJsonFormatter());
             var noop = new NoopClient(apiKey, logFormatter);
             using (var log = new LoggerConfiguration().WriteTo.DatadogLogs(apiKey, client: noop).CreateLogger())
             {
@@ -52,7 +54,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         public void TestDefaultCustomFormatter()
         {
             const string apiKey = "NOT_AN_API_KEY";
-            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, new MessageOnlyFormatterForTest());
+            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, 256 * 1000, new MessageOnlyFormatterForTest());
             var noop = new NoopClient(apiKey, logFormatter);
             using (var log = new LoggerConfiguration().WriteTo.DatadogLogs(apiKey, client: noop).CreateLogger())
             {
@@ -77,7 +79,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         public void TestMaxLogLengthIsHandled()
         {
             const string apiKey = "NOT_AN_API_KEY";
-            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, new MessageOnlyFormatterForTest());
+            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, 256 * 1000, new MessageOnlyFormatterForTest());
             var noop = new NoopClient(apiKey, logFormatter);
             var exceptions = new List<Exception>();
 
@@ -92,6 +94,8 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             }
             Assert.IsEmpty(exceptions);
 
+
+            noop = new NoopClient(apiKey, logFormatter);
             // Test a string that is just under the limit
             using (var log = new LoggerConfiguration().WriteTo.DatadogLogs(apiKey, client: noop, exceptionHandler: x => exceptions.Add(x)).CreateLogger())
             {
@@ -101,7 +105,30 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
                 }
                 log.Information(str.ToString());
             }
-            Assert.AreEqual(exceptions[0].GetType(), typeof(TooBigLogEventException));
+            Assert.IsEmpty(exceptions);
+            // should be truncated
+            Assert.AreEqual(2, noop.SentPayloads.Count);
+        }
+
+        [Test]
+        public void TestTruncate()
+        {
+            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, 10, new MessageOnlyFormatterForTest());
+
+            var truncated = logFormatter.TruncateIfNeeded("1234567890abcdefghij").Select(x => Encoding.UTF8.GetString(x)).ToArray();
+            Assert.AreEqual("1234567890...TRUNCATED...", truncated[0]);
+            Assert.AreEqual("...TRUNCATED...abcdefghij", truncated[1]);
+
+            truncated = logFormatter.TruncateIfNeeded("1234567890abcdefghij*").Select(x => Encoding.UTF8.GetString(x)).ToArray();
+            Assert.AreEqual("1234567890...TRUNCATED...", truncated[0]);
+            Assert.AreEqual("...TRUNCATED...abcdefghij...TRUNCATED...", truncated[1]);
+            Assert.AreEqual("...TRUNCATED...*", truncated[2]);
+
+            truncated = logFormatter.TruncateIfNeeded("1234567890").Select(x => Encoding.UTF8.GetString(x)).ToArray();
+            Assert.AreEqual("1234567890", truncated[0]);
+
+            truncated = logFormatter.TruncateIfNeeded("1234").Select(x => Encoding.UTF8.GetString(x)).ToArray();
+            Assert.AreEqual("1234", truncated[0]);
         }
     }
 }

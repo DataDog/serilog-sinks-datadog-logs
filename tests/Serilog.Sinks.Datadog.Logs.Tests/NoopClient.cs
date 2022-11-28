@@ -27,8 +27,11 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
 
             foreach (var logEvent in events)
             {
-                var formatted = _formatter.RenderDatadogEvent(logEvent);
-                SentPayloads.Add(formatted);
+                var payloads = _formatter.RenderDatadogEvents(logEvent);
+                foreach (var payload in payloads) 
+                {
+                    SentPayloads.Add(payload);
+                }
             }
             return Task.CompletedTask;
         }

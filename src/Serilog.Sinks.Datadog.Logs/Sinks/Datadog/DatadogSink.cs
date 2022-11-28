@@ -41,6 +41,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// The maximum number of events to emit in a single batch.
         /// </summary>
         private const int DefaultBatchSizeLimit = 50;
+        private const int MaxMessageSize = 256 * 1000;
 
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags,
@@ -48,7 +49,7 @@ namespace Serilog.Sinks.Datadog.Logs
             IDatadogClient client = null, ITextFormatter formatter = null)
         {
             formatter = formatter ?? new DatadogJsonFormatter();
-            var enricher = new DatadogLogRenderer(source, service, host, tags, formatter);
+            var enricher = new DatadogLogRenderer(source, service, host, tags, MaxMessageSize, formatter);
             _client = client ??
                       CreateDatadogClient(apiKey, enricher, config, detectTCPDisconnection);
             _exceptionHandler = exceptionHandler;

@@ -52,17 +52,6 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             var serializedEvents = SerializeEvents(events);
             var tasks = serializedEvents.LogEventChunks.Select(post => Post(post));
-
-            var tooBigTask = Task.Run(() =>
-            {
-                if (serializedEvents.TooBigLogEvents.Count > 0)
-                {
-                    throw new TooBigLogEventException(serializedEvents.TooBigLogEvents);
-                }
-            });
-
-            tasks = tasks.Concat(new[] { tooBigTask });
-
             return Task.WhenAll(tasks);
         }
 
@@ -76,9 +65,8 @@ namespace Serilog.Sinks.Datadog.Logs
             var logEvents = new List<LogEvent>(eventsQuantity);
             foreach (var logEvent in events)
             {
-                try
-                {
-                    var payload = _renderer.RenderDatadogEvent(logEvent);
+                var payloads = _renderer.RenderDatadogEvents(logEvent);
+                foreach (var payload in payloads) {
                     var payloadSize = Encoding.UTF8.GetByteCount(payload);
 
                     if (currentSize + payloadSize > _maxSize)
@@ -92,11 +80,6 @@ namespace Serilog.Sinks.Datadog.Logs
                     chunkBuffer.Add(payload);
                     logEvents.Add(logEvent);
                     currentSize += payloadSize;
-                }
-                catch (TooBigLogEventException)
-                {
-                    serializedEvents.TooBigLogEvents.Add(logEvent);
-                    continue;  // The log is dropped because the backend would not accept it
                 }
             }
             if (chunkBuffer.Count != 0)
@@ -158,7 +141,6 @@ namespace Serilog.Sinks.Datadog.Logs
         private class SerializedEvents
         {
             public List<LogEventChunk> LogEventChunks { get; } = new List<LogEventChunk>();
-            public List<LogEvent> TooBigLogEvents { get; } = new List<LogEvent>();
         }
     }
 }
