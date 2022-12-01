@@ -10,7 +10,6 @@ using System.Net.Http;
 using Serilog.Events;
 using System.Collections.Generic;
 using System.Linq;
-using Serilog.Formatting;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -51,60 +50,40 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public Task WriteAsync(IEnumerable<LogEvent> events)
         {
-            var serializedEvents = SerializeEvents(events);
-            var tasks = serializedEvents.LogEventChunks.Select(post => Post(post));
+            var builtEvents = BuildEvents(events);
+            var tasks = builtEvents.Select(post => Post(post));
             return Task.WhenAll(tasks);
         }
 
-        private SerializedEvents SerializeEvents(IEnumerable<LogEvent> events)
+        private List<JsonPayloadBuilder> BuildEvents(IEnumerable<LogEvent> events)
         {
-            var serializedEvents = new SerializedEvents();
-            int currentSize = 0;
+            var builders = new List<JsonPayloadBuilder>();
+            var builder = new JsonPayloadBuilder();
 
-            var eventsQuantity = events.Count();
-            var chunkBuffer = new List<string>(eventsQuantity);
-            var logEvents = new List<LogEvent>(eventsQuantity);
             foreach (var logEvent in events)
             {
                 var payloads = _renderer.RenderDatadogEvents(logEvent);
-                foreach (var payload in payloads) {
-                    var payloadSize = Encoding.UTF8.GetByteCount(payload);
-                    var maxSize = _maxPayloadSize - logEvents.Count() - 2; // Account for # of "," and "[", "]" in the final payload
-
-                    if (currentSize + payloadSize > maxSize || logEvents.Count() >= _maxMessageCount)
+                foreach (var payload in payloads)
+                {
+                    if (builder.Size() >= _maxPayloadSize || builder.Count() >= _maxMessageCount)
                     {
-                        // Flush the chunkBuffer to the chunks and reset the chunkBuffer
-                        serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
-                        chunkBuffer.Clear();
-                        logEvents.Clear();
-                        currentSize = 0;
+                        builders.Add(builder);
+                        builder = new JsonPayloadBuilder();
                     }
-                    chunkBuffer.Add(payload);
-                    logEvents.Add(logEvent);
-                    currentSize += payloadSize;
+                    builder.Add(payload, logEvent);
                 }
             }
-            if (chunkBuffer.Count != 0)
+            if (builder.Count() > 0)
             {
-                serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
+                builders.Add(builder);
             }
 
-            return serializedEvents;
-
+            return builders;
         }
 
-        private static LogEventChunk GenerateChunk(IEnumerable<string> collection, string delimiter, string prefix, string suffix, IEnumerable<LogEvent> logEvents)
+        private async Task Post(JsonPayloadBuilder payloadBuilder)
         {
-            return new LogEventChunk
-            {
-                Payload = prefix + string.Join(delimiter, collection) + suffix,
-                LogEvents = new List<LogEvent>(logEvents), // Copy `logEvents` as `logEvents` is reused.
-            };
-        }
-
-        private async Task Post(LogEventChunk logEventChunk)
-        {
-            var payload = logEventChunk.Payload;
+            var payload = payloadBuilder.Build();
             var content = new StringContent(payload, Encoding.UTF8, _content);
             for (int retry = 0; retry < MaxRetries; retry++)
             {
@@ -129,20 +108,9 @@ namespace Serilog.Sinks.Datadog.Logs
                 }
             }
 
-            throw new CannotSendLogEventException(payload, logEventChunk.LogEvents);
+            throw new CannotSendLogEventException(payload, payloadBuilder.LogEvents);
         }
 
         void IDatadogClient.Close() { }
-
-        private class LogEventChunk
-        {
-            public string Payload { get; set; }
-            public IEnumerable<LogEvent> LogEvents { get; set; }
-        }
-
-        private class SerializedEvents
-        {
-            public List<LogEventChunk> LogEventChunks { get; } = new List<LogEventChunk>();
-        }
     }
 }

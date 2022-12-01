@@ -47,8 +47,9 @@ namespace Serilog.Sinks.Datadog.Logs
                 .ToArray();
         }
 
-        internal IEnumerable<byte[]> TruncateIfNeeded(string rawPayload) {
-            
+        internal IEnumerable<byte[]> TruncateIfNeeded(string rawPayload)
+        {
+
             var bytes = Encoding.UTF8.GetBytes(rawPayload);
 
             var grouped = Enumerable.Range(0, (bytes.Count() / _maxMessageSize) + 1)
@@ -69,14 +70,15 @@ namespace Serilog.Sinks.Datadog.Logs
                     {
                         return _truncatedFlag.Concat(x);
                     }
-                     return _truncatedFlag.Concat(x.Concat(_truncatedFlag));
+                    return _truncatedFlag.Concat(x.Concat(_truncatedFlag));
                 });
             }
 
             return grouped.Select(x => x.ToArray());
         }
 
-        internal string ToDDPayload(string rawPayload) {
+        internal string ToDDPayload(string rawPayload)
+        {
             // Render the dd event - a private json structure with the user event in the `message` field and 
             // Datadog specific fields at the root level. The message field can accept any format. By default 
             // Serilog sink will emit json - but the user can change change this format. 
