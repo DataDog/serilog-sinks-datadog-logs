@@ -19,7 +19,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private const string _version = "0.3.8";
         private const string _content = "application/json";
-        private const int _maxPayloadSize = 5 * 1000 * 1000 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
+        private const int _maxPayloadSize = 5 * 1000 * 1000;
         private const int _maxMessageCount = 1000;
 
 
@@ -69,8 +69,9 @@ namespace Serilog.Sinks.Datadog.Logs
                 var payloads = _renderer.RenderDatadogEvents(logEvent);
                 foreach (var payload in payloads) {
                     var payloadSize = Encoding.UTF8.GetByteCount(payload);
+                    var maxSize = _maxPayloadSize - logEvents.Count() - 2; // Account for # of "," and "[", "]" in the final payload
 
-                    if (currentSize + payloadSize > _maxPayloadSize || logEvents.Count() >= _maxMessageCount)
+                    if (currentSize + payloadSize > maxSize || logEvents.Count() >= _maxMessageCount)
                     {
                         // Flush the chunkBuffer to the chunks and reset the chunkBuffer
                         serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
