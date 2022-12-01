@@ -70,7 +70,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 foreach (var payload in payloads) {
                     var payloadSize = Encoding.UTF8.GetByteCount(payload);
 
-                    if (currentSize + payloadSize > _maxPayloadSize || serializedEvents.LogEventChunks.Count() >= _maxMessageCount)
+                    if (currentSize + payloadSize > _maxPayloadSize || logEvents.Count() >= _maxMessageCount)
                     {
                         // Flush the chunkBuffer to the chunks and reset the chunkBuffer
                         serializedEvents.LogEventChunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]", logEvents));
