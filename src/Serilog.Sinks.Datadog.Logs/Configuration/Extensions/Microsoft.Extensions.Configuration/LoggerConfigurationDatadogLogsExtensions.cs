@@ -40,6 +40,7 @@ namespace Serilog
         /// <param name="detectTCPDisconnection">Detect when the TCP connection is lost and recreate a new connection.</param>
         /// <param name="client">A client implementation to send the logs.</param>
         /// <param name="formatter">A formatter implementation to change the format of the logs.</param>
+        /// <param name="maxMessageSize">The maximum size in bytes of a message before it is truncated</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
@@ -58,7 +59,8 @@ namespace Serilog
             Action<Exception> exceptionHandler = null,
             bool detectTCPDisconnection = false, 
             IDatadogClient client = null,
-            ITextFormatter formatter = null)
+            ITextFormatter formatter = null,
+            int? maxMessageSize = null)
         {
             if (loggerConfiguration == null)
             {
@@ -70,7 +72,7 @@ namespace Serilog
             }
 
             var config = ApplyMicrosoftExtensionsConfiguration.ConfigureDatadogConfiguration(configuration, configurationSection);
-            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, client, formatter);
+            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, client, formatter, maxMessageSize);
 
             return loggerConfiguration.Sink(sink, logLevel);
         }

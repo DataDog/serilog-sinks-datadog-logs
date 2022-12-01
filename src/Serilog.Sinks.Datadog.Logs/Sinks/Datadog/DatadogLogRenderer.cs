@@ -36,15 +36,15 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public string[] RenderDatadogEvents(LogEvent logEvent)
         {
-
             // Render the payload with the default (or user supplied) ITextFormatter
             var payload = new StringBuilder();
             var payloadWriter = new System.IO.StringWriter(payload);
             _formatter.Format(logEvent, payloadWriter);
             var rawPayload = payloadWriter.ToString();
 
-            var truncated = TruncateIfNeeded(rawPayload);
-            return truncated.Select(x => ToDDPayload(Encoding.UTF8.GetString(x))).ToArray();
+            return TruncateIfNeeded(rawPayload)
+                .Select(x => ToDDPayload(Encoding.UTF8.GetString(x)))
+                .ToArray();
         }
 
         internal IEnumerable<byte[]> TruncateIfNeeded(string rawPayload) {
