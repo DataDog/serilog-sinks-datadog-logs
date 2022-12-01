@@ -13,14 +13,12 @@ namespace Serilog.Sinks.Datadog.Logs
     {
         private int _size = 2; // To account for "[" and "]"
         private string _delimiter = "";
-        private StringBuilder _buffer { get; set; }
-        public List<LogEvent> LogEvents { get; set; }
+        private StringBuilder _buffer = new StringBuilder();
+        public List<LogEvent> LogEvents = new List<LogEvent>();
 
         public JsonPayloadBuilder()
         {
-            _buffer = new StringBuilder();
             _buffer.Append("[");
-            LogEvents = new List<LogEvent>();
         }
 
         public int Size()
