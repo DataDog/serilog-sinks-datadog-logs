@@ -173,6 +173,8 @@ If you cannot use Serilog-expressions due to framework compatibility - you can i
 | `formatter`              | `ITextFormatter`       | A custom formatter implementation to change the format of the logs |
 | `maxMessageSize`         | `int`                  | The maximum size in bytes of a message before it is truncated |
 
+**NOTE:** if `maxMessageSize` [exceeds the documented API limit of 1MB](https://docs.datadoghq.com/api/latest/logs/) - any payloads larger than 1MB will be dropped by the intake. 
+
 ## How to build the NuGet package
 
 Bump the version in `src/Serilog.Sinks.Datadog.Logs.csproj` and merge your branch
