@@ -19,8 +19,9 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly List<LogEventProperty> _props;
         private readonly ITextFormatter _formatter;
         private readonly byte[] _truncatedFlag = Encoding.UTF8.GetBytes("...TRUNCATED...");
+        private readonly int _ddPayloadSize;
 
-        public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter)
+        public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter, int? ddPayloadSize = null)
         {
 
             var props = new List<LogEventProperty> {
@@ -32,6 +33,10 @@ namespace Serilog.Sinks.Datadog.Logs
             _props = props;
             _maxMessageSize = maxMessageSize;
             _formatter = formatter;
+
+            // We have to account for the size of the dd (wrapper) payload in order to accurately truncate the
+            // message. These values are only set once at startup - so we can cache this size and re-use it. 
+            _ddPayloadSize = ddPayloadSize ?? Encoding.UTF8.GetByteCount(ToDDPayload(""));
         }
 
         public string[] RenderDatadogEvents(LogEvent logEvent)
@@ -50,13 +55,19 @@ namespace Serilog.Sinks.Datadog.Logs
         internal IEnumerable<byte[]> TruncateIfNeeded(string rawPayload)
         {
 
+            // In order to ensure the message fits into the final payload - we need to account for
+            // the size of the (possibly inserted) truncated flags + the size of the wrapping json.
+            var maxSize = _maxMessageSize - (2 * _truncatedFlag.Count()) - _ddPayloadSize;
+
             var bytes = Encoding.UTF8.GetBytes(rawPayload);
 
-            var grouped = Enumerable.Range(0, (bytes.Count() / _maxMessageSize) + 1)
-                .Select((b, i) => bytes.Skip(i * _maxMessageSize)
-                                       .Take(_maxMessageSize))
+            // Split the payload into chunks within the size constraints. 
+            var grouped = Enumerable.Range(0, (bytes.Count() / maxSize) + 1)
+                .Select((b, i) => bytes.Skip(i * maxSize)
+                                       .Take(maxSize))
                 .Where(x => x.Count() > 0);
 
+            // If the payload was split, we have to append and prepend the `...TRUNCATED...` flag to the messages.
             if (grouped.Count() > 1)
             {
                 var count = grouped.Count();

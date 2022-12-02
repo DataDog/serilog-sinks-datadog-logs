@@ -113,7 +113,8 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         [Test]
         public void TestTruncate()
         {
-            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, 10, new MessageOnlyFormatterForTest());
+            var maxSize = 10 + (2 * "...TRUNCATED...".Count());
+            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, maxSize, new MessageOnlyFormatterForTest(), 0);
 
             var truncated = logFormatter.TruncateIfNeeded("1234567890abcdefghij").Select(x => Encoding.UTF8.GetString(x)).ToArray();
             Assert.AreEqual("1234567890...TRUNCATED...", truncated[0]);
@@ -129,6 +130,31 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
 
             truncated = logFormatter.TruncateIfNeeded("1234").Select(x => Encoding.UTF8.GetString(x)).ToArray();
             Assert.AreEqual("1234", truncated[0]);
+        }
+
+        [Test]
+        public void TestTruncateNoOverflow()
+        {
+            var targetSize = 1000 * 1000;
+            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, targetSize, new MessageOnlyFormatterForTest());
+
+            var logBuilder = new StringBuilder();
+            for (var i = 0; i < targetSize; i++) {
+                logBuilder.Append("a");
+            }
+            var log = logBuilder.ToString();
+
+            var truncated = logFormatter.TruncateIfNeeded(log).Select(x => Encoding.UTF8.GetString(x)).ToArray();
+            var final = logFormatter.ToDDPayload(truncated[0]);
+
+            // We account for 2x `...TRUNCATED...` in every chunk. 
+            // Since the first chunk is only contains a trailing `...TRUNCATED...` - we only have to account for
+            // a single instance in the final bytes. 
+            var underflow = "...TRUNCATED...".Count();
+            Assert.AreEqual(targetSize, final.Count() + underflow);
+
+            // Check that we didn't lose any bytes in the source log
+            Assert.AreEqual(targetSize, truncated[0].Count() + truncated[1].Count() - (2 * "...TRUNCATED...".Count()));
         }
     }
 }
