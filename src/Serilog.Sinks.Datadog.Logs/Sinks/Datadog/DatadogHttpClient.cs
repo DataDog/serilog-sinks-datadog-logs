@@ -16,7 +16,7 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogHttpClient : IDatadogClient
     {
 
-        private const string _version = "0.3.8";
+        private const string _version = "0.4.1-beta1";
         private const string _content = "application/json";
         private const int _maxPayloadSize = 5 * 1000 * 1000;
         private const int _maxMessageCount = 1000;
