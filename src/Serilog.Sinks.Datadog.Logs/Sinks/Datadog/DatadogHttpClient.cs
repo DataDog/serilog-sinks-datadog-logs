@@ -47,6 +47,14 @@ namespace Serilog.Sinks.Datadog.Logs
             _url = $"{config.Url}/api/v2/logs";
             _renderer = renderer;
         }
+        
+        protected DatadogHttpClient(DatadogConfiguration config, HttpClient client, string url, DatadogLogRenderer renderer)
+        {
+            _config = config;
+            _client = client;
+            _url = url;
+            _renderer = renderer;
+        }
 
         public Task WriteAsync(IEnumerable<LogEvent> events)
         {
