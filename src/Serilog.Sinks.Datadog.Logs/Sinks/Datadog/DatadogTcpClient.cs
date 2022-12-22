@@ -93,10 +93,10 @@ namespace Serilog.Sinks.Datadog.Logs
             foreach (var logEvent in events)
             {
                 var messages = _renderer.RenderDatadogEvents(logEvent);
-                foreach (var messsage in messages)
+                foreach (var message in messages)
                 {
                     payloadBuilder.Append(_apiKey + WhiteSpace);
-                    payloadBuilder.Append(messsage);
+                    payloadBuilder.Append(message);
                     payloadBuilder.Append(MessageDelimiter);
                 }
             }
