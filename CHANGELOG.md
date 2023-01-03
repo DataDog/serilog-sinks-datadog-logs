@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+* Split logs larger than the max message size
+* Make max message size configurable
+* Raise max payload size to `5MB`
+
 ## 0.4.0
 * Add support for custom `ITextFormatter`.
 

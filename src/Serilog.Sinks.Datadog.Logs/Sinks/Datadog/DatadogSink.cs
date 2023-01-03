@@ -42,13 +42,19 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int DefaultBatchSizeLimit = 50;
 
+        /// <summary>
+        /// The maximum size of a log event before truncation. 
+        /// Should not exceed 1MB as per API documentation: https://docs.datadoghq.com/api/latest/logs/
+        /// </summary>
+        private const int DefaultMaxMessageSize = 256 * 1000;
+
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags,
             DatadogConfiguration config, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false,
-            IDatadogClient client = null, ITextFormatter formatter = null)
+            IDatadogClient client = null, ITextFormatter formatter = null, int? maxMessageSize = null)
         {
             formatter = formatter ?? new DatadogJsonFormatter();
-            var enricher = new DatadogLogRenderer(source, service, host, tags, formatter);
+            var enricher = new DatadogLogRenderer(source, service, host, tags, maxMessageSize ?? DefaultMaxMessageSize, formatter);
             _client = client ??
                       CreateDatadogClient(apiKey, enricher, config, detectTCPDisconnection);
             _exceptionHandler = exceptionHandler;
@@ -67,7 +73,8 @@ namespace Serilog.Sinks.Datadog.Logs
             Action<Exception> exceptionHandler = null,
             bool detectTCPDisconnection = false,
             IDatadogClient client = null,
-            ITextFormatter formatter = null)
+            ITextFormatter formatter = null,
+            int? maxMessageSize = null)
         {
             var options = new PeriodicBatchingSinkOptions()
             {
@@ -81,7 +88,7 @@ namespace Serilog.Sinks.Datadog.Logs
             }
 
             var sink = new DatadogSink(apiKey, source, service, host, tags, config, exceptionHandler,
-                detectTCPDisconnection, client, formatter);
+                detectTCPDisconnection, client, formatter, maxMessageSize);
 
             return new PeriodicBatchingSink(sink, options);
         }

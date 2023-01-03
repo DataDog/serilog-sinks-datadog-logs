@@ -171,6 +171,9 @@ If you cannot use Serilog-expressions due to framework compatibility - you can i
 | `exceptionHandler`       | `Action<Exception>`    | This function is called when an exception occurs when using `DatadogConfiguration.UseTCP=false` (the default configuration). |
 | `detectTCPDisconnection` | `bool`                 | Detect when the TCP connection is lost and recreate a new connection. |
 | `formatter`              | `ITextFormatter`       | A custom formatter implementation to change the format of the logs |
+| `maxMessageSize`         | `int`                  | The maximum size in bytes of a message before it is split into chunks |
+
+**NOTE:** if `maxMessageSize` [exceeds the documented API limit of 1MB](https://docs.datadoghq.com/api/latest/logs/) - any payloads larger than 1MB will be dropped by the intake. 
 
 ## How to build the NuGet package
 
