@@ -9,13 +9,11 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     internal class DatadogHttpIntakeClient : HttpClient
     {
-        private const string _version = "0.4.1";
-
         public DatadogHttpIntakeClient(string apiKey)
         {
             DefaultRequestHeaders.Add("DD-API-KEY", apiKey);
             DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");
-            DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", _version);
+            DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", Consts.Version);
         }
     }
 }
