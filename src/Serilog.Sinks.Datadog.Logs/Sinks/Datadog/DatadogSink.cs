@@ -27,7 +27,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly IDatadogClient _client;
         private readonly Action<Exception> _exceptionHandler;
 
-#if !NETSTANDARD1_0_OR_GREATER
+#if !(NETSTANDARD1_0_OR_GREATER  || NET5_0_OR_GREATER || NET461_OR_GREATER)
         private static Task completedTask = Task.FromResult(false);
 #endif
 
@@ -117,7 +117,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public Task OnEmptyBatchAsync()
         {
-#if NETSTANDARD1_0_OR_GREATER
+#if NETSTANDARD1_0_OR_GREATER || NET5_0_OR_GREATER || NET461_OR_GREATER
             return Task.CompletedTask;
 #else
             return completedTask;
