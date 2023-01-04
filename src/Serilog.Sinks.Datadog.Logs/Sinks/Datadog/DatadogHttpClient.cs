@@ -15,7 +15,6 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogHttpClient : IDatadogClient
     {
-        private const string _version = "0.4.1";
         private const string _content = "application/json";
         private const int _maxPayloadSize = 5 * 1000 * 1000;
         private const int _maxMessageCount = 1000;
@@ -34,14 +33,11 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int MaxBackoff = 30;
 
-        public DatadogHttpClient(DatadogConfiguration config, DatadogLogRenderer renderer, string apiKey)
+        public DatadogHttpClient(string url, DatadogLogRenderer renderer, HttpClient client)
         {
-            _client = new HttpClient();
-            _client.DefaultRequestHeaders.Add("DD-API-KEY", apiKey);
-            _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");
-            _client.DefaultRequestHeaders.Add("DD-EVP-ORIGIN-VERSION", _version);
-            _url = $"{config.Url}/api/v2/logs";
+            _url = url;
             _renderer = renderer;
+            _client = client;
         }
 
         public Task WriteAsync(IEnumerable<LogEvent> events)
