@@ -2,6 +2,6 @@
 {
     internal class Consts
     {
-        public const string Version = "0.4.1";
+        public const string Version = "0.5.1";
     }
 }
