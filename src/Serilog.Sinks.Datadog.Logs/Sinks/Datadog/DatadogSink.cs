@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Serilog.Context;
 using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
@@ -140,7 +139,8 @@ namespace Serilog.Sinks.Datadog.Logs
             }
             else
             {
-                return new DatadogHttpClient(configuration, renderer, apiKey);
+                var httpIntakeClient = new DatadogHttpIntakeClient(apiKey);
+                return new DatadogHttpClient($"{configuration.Url}/api/v2/logs", renderer, httpIntakeClient);
             }
         }
 
