@@ -1,4 +1,6 @@
 # Changelog
+## 0.5.1
+* Allow using custom HttpClient and Url. Thanks @tomasz-soltysik
 
 ## 0.5.0
 * Split logs larger than the max message size
