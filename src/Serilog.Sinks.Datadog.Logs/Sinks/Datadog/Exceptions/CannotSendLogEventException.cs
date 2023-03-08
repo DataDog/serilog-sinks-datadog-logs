@@ -5,6 +5,7 @@
 
 using Serilog.Events;
 using System.Collections.Generic;
+using System.Net.Http;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -12,6 +13,16 @@ namespace Serilog.Sinks.Datadog.Logs
     {
         public CannotSendLogEventException(string payload, IEnumerable<LogEvent> logEvents)
             : base($"Could not send payload to Datadog: {payload}", logEvents)
+        {
+        }
+
+        public CannotSendLogEventException(string payload, IEnumerable<LogEvent> logEvents, System.Exception ex)
+            : base($"Could not send payload to Datadog: {ex.Message} - {payload}.", logEvents)
+        {
+        }
+
+        public CannotSendLogEventException(string payload, IEnumerable<LogEvent> logEvents, HttpResponseMessage message)
+            : base($"Could not send payload to Datadog: [{message.StatusCode}] {message.ReasonPhrase} - {payload}. ", logEvents)
         {
         }
     }
