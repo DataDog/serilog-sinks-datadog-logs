@@ -1,4 +1,8 @@
 # Changelog
+
+## 0.5.2
+* Improve the exception thrown when a request fails or retry times out. Thanks @cdhunt
+
 ## 0.5.1
 * Allow using custom HttpClient and Url. Thanks @tomasz-soltysik
 
