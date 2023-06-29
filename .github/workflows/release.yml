@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  release:
+    types:
+      - released
+      - prereleased
+
+env:
+  SOLUTION: ./Serilog.Sinks.Datadog.Logs.sln
+  PROJECT: ./src/Serilog.Sinks.Datadog.Logs/Serilog.Sinks.Datadog.Logs.csproj
+
+jobs:
+  build:
+    runs-on: windows-2019
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Sets build metadata
+        id: meta
+        run: |
+          echo "version=$($env:GITHUB_REF -replace 'refs/tags/v', '')" >> $env:GITHUB_OUTPUT
+
+      - name: Dotnet restore
+        run: |
+          dotnet restore --locked-mode ${{ env.SOLUTION }}
+
+      - name: Dotnet build
+        run: |
+          dotnet build -c Release /p:Version=${{ steps.meta.outputs.version }} --no-restore ${{ env.SOLUTION }}
+
+      - name: Dotnet test
+        run: |
+          dotnet test -c Release /p:Version=${{ steps.meta.outputs.version }} --no-restore --no-build ${{ env.SOLUTION }}
+
+      - name: Dotnet pack Shared
+        run: |
+          dotnet pack -c Release /p:Version=${{ steps.meta.outputs.version }} --no-restore --no-build --output . ${{ env.PROJECT }}
+
+      - name: Dotnet push
+        run: |
+          dotnet nuget push *.nupkg --no-symbols --source https://nuget.pkg.github.com/degould/index.json --api-key $env:GITHUB_TOKEN
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

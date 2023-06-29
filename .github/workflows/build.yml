@@ -1,0 +1,39 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+env:
+  SOLUTION: ./Serilog.Sinks.Datadog.Logs.sln
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-2019
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Dotnet restore
+        run: |
+          dotnet restore --locked-mode ${{ env.SOLUTION }}
+
+      - name: Dotnet build
+        run: |
+          dotnet build -c Release --no-restore ${{ env.SOLUTION }}
+
+      - name: Dotnet test
+        run: |
+          dotnet test -c Release --no-restore --no-build --collect:"XPlat Code Coverage" -l "trx;LogFileName=results.trx" ${{ env.SOLUTION }} -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencovers
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: Test results
+          path: ./**/results.trx
+          reporter: dotnet-trx
