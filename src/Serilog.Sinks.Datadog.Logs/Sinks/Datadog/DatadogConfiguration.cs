@@ -33,7 +33,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Port of the server to send log events to.
         /// </summary>
-        public int Port { get; set;  }
+        public int Port { get; set; }
 
         /// <summary>
         /// Use SSL or plain text.
@@ -45,7 +45,18 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public bool UseTCP { get; set; }
 
-        public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {
+        /// <summary>
+        /// Http Proxy host.
+        /// </summary>
+        public string HttpProxyHost { get; set; }
+
+        /// <summary>
+        /// Http Proxy port.
+        /// </summary>
+        public int HttpProxyPort { get; set; }
+
+        public DatadogConfiguration() : this(DDUrl, DDPort, true, false)
+        {
         }
 
         public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false)

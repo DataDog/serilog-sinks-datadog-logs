@@ -9,7 +9,7 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     internal class DatadogHttpIntakeClient : HttpClient
     {
-        public DatadogHttpIntakeClient(string apiKey)
+        public DatadogHttpIntakeClient(string apiKey, HttpClientHandler handler) : base(handler)
         {
             DefaultRequestHeaders.Add("DD-API-KEY", apiKey);
             DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");

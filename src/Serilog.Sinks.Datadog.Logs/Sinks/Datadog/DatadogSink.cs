@@ -42,7 +42,7 @@ namespace Serilog.Sinks.Datadog.Logs
         private const int DefaultBatchSizeLimit = 50;
 
         /// <summary>
-        /// The maximum size of a log event before truncation. 
+        /// The maximum size of a log event before truncation.
         /// Should not exceed 1MB as per API documentation: https://docs.datadoghq.com/api/latest/logs/
         /// </summary>
         private const int DefaultMaxMessageSize = 256 * 1000;
@@ -139,7 +139,8 @@ namespace Serilog.Sinks.Datadog.Logs
             }
             else
             {
-                var httpIntakeClient = new DatadogHttpIntakeClient(apiKey);
+                var httpIntakeClientHandler = new DatadogHttpIntakeClientHandler(configuration.HttpProxyHost, configuration.HttpProxyPort);
+                var httpIntakeClient = new DatadogHttpIntakeClient(apiKey, httpIntakeClientHandler);
                 return new DatadogHttpClient($"{configuration.Url}/api/v2/logs", renderer, httpIntakeClient);
             }
         }

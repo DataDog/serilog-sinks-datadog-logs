@@ -1,17 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard1.3;net45;net461;net472;net5.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net45;net461;net472;net5.0</TargetFrameworks>
     <AssemblyName>Serilog.Sinks.Datadog.Logs</AssemblyName>
-    <PackageId>Serilog.Sinks.Datadog.Logs</PackageId>
+    <PackageId>Degould.Serilog.Sinks.Datadog.Logs</PackageId>
     <PackageVersion>0.5.2</PackageVersion>
     <Authors>Datadog</Authors>
     <Title>Serilog Sink Datadog Logs</Title>
     <Description>Serilog Sink that sends log events to Datadog https://www.datadoghq.com/</Description>
     <Copyright>Datadog, Inc. 2018</Copyright>
     <PackageTags>serilog;logging;datadog;sink</PackageTags>
-    <PackageProjectUrl>https://github.com/DataDog/serilog-sinks-datadog-logs/</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/DataDog/serilog-sinks-datadog-logs/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/DeGould/serilog-sinks-datadog-logs/</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/DeGould/serilog-sinks-datadog-logs/blob/master/LICENSE</PackageLicenseUrl>
     <PackageIconUrl>http://serilog.net/images/serilog-sink-nuget.png</PackageIconUrl>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Serilog.Sinks.Datadog.Logs.snk</AssemblyOriginatorKeyFile>
