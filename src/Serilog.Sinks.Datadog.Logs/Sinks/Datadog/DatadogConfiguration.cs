@@ -33,7 +33,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Port of the server to send log events to.
         /// </summary>
-        public int Port { get; set;  }
+        public int Port { get; set;  } = 443;
 
         /// <summary>
         /// Use SSL or plain text.
