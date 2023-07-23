@@ -1,6 +1,6 @@
 # Serilog.Sinks.Datadog.Logs
 
-A Serilog sink that send events and logs staight away to Datadog. By default the sink sends logs over HTTPS
+A Serilog sink that send events and logs straight away to Datadog. By default the sink sends logs over HTTPS
 
 **Package** - [Serilog.Sinks.Datadog.Logs](http://nuget.org/packages/serilog.sinks.datadog.logs)
 | **Platforms** - .NET 4.5, .NET 4.6.1, .NET 4.7.2, netstandard1.3, netstandard2.0
