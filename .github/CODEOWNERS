@@ -3,7 +3,7 @@
 # and another the rest of the directory.
 
 
-*                     @DataDog/agent-metrics-logs
+*                     @DataDog/agent-processing-and-routing
 
 # Documentation
 *.md                  @DataDog/documentation
