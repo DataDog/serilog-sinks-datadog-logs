@@ -3,26 +3,24 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
 
-using System;
-using System.Threading.Tasks;
-using System.Text;
-using Serilog.Debugging;
-using System.Net.Http;
 using Serilog.Events;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogHttpClient : IDatadogClient
     {
         private const string _content = "application/json";
-        private const int _maxSize = 2 * 1024 * 1024 - 51;  // Need to reserve space for at most 49 "," and "[" + "]"
-        private const int _maxMessageSize = 256 * 1024;
+        private const int _maxPayloadSize = 5 * 1000 * 1000;
+        private const int _maxMessageCount = 1000;
 
-        private readonly DatadogConfiguration _config;
         private readonly string _url;
-        private readonly LogFormatter _formatter;
+        private readonly DatadogLogRenderer _renderer;
         private readonly HttpClient _client;
 
         /// <summary>
@@ -35,67 +33,52 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int MaxBackoff = 30;
 
-        /// <summary>
-        /// Shared UTF8 encoder.
-        /// </summary>
-        private static readonly UTF8Encoding UTF8 = new UTF8Encoding();
-
-        public DatadogHttpClient(DatadogConfiguration config, LogFormatter formatter, string apiKey)
+        public DatadogHttpClient(string url, DatadogLogRenderer renderer, HttpClient client)
         {
-            _config = config;
-            _client = new HttpClient();
-            _url = $"{config.Url}/v1/input/{apiKey}";
-            _formatter = formatter;
-            SelfLog.WriteLine("Creating HTTP client with config: {0}", config);
+            _url = url;
+            _renderer = renderer;
+            _client = client;
         }
 
-        public async Task WriteAsync(IEnumerable<LogEvent> events)
+        public Task WriteAsync(IEnumerable<LogEvent> events)
         {
-            var chunks = SerializeEvents(events);
-            var tasks = chunks.Select(Post);
-
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            var builtEvents = BuildEvents(events);
+            var tasks = builtEvents.Select(post => Post(post));
+            return Task.WhenAll(tasks);
         }
 
-        private List<String> SerializeEvents(IEnumerable<LogEvent> events)
+        private List<JsonPayloadBuilder> BuildEvents(IEnumerable<LogEvent> events)
         {
-            List<string> chunks = new List<string>();
+            var builders = new List<JsonPayloadBuilder>();
+            var builder = new JsonPayloadBuilder();
 
-            int currentSize = 0;
-
-            var chunkBuffer = new List<string>(events.Count());
             foreach (var logEvent in events)
             {
-                var formattedLog = _formatter.formatMessage(logEvent);
-                var logSize = Encoding.UTF8.GetByteCount(formattedLog);
-                if (logSize > _maxMessageSize)
+                var payloads = _renderer.RenderDatadogEvents(logEvent);
+                foreach (var payload in payloads)
                 {
-                    continue;  // The log is dropped because the backend would not accept it
+                    if (builder.Size() >= _maxPayloadSize || builder.Count() >= _maxMessageCount)
+                    {
+                        builders.Add(builder);
+                        builder = new JsonPayloadBuilder();
+                    }
+                    builder.Add(payload, logEvent);
                 }
-                if (currentSize + logSize > _maxSize)
-                {
-                    // Flush the chunkBuffer to the chunks and reset the chunkBuffer
-                    chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]"));
-                    chunkBuffer.Clear();
-                    currentSize = 0;
-                }
-                chunkBuffer.Add(formattedLog);
-                currentSize += logSize;
             }
-            chunks.Add(GenerateChunk(chunkBuffer, ",", "[", "]"));
+            if (builder.Count() > 0)
+            {
+                builders.Add(builder);
+            }
 
-            return chunks;
-
+            return builders;
         }
 
-        private static string GenerateChunk(IEnumerable<string> collection, string delimiter, string prefix, string suffix)
+        private async Task Post(JsonPayloadBuilder payloadBuilder)
         {
-            return prefix + String.Join(delimiter, collection) + suffix;
-        }
-
-        private async Task Post(string payload)
-        {
+            var payload = payloadBuilder.Build();
             var content = new StringContent(payload, Encoding.UTF8, _content);
+            HttpResponseMessage lastResult = null;
+            Exception lastException = null;
             for (int retry = 0; retry < MaxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(2, retry), MaxBackoff);
@@ -106,22 +89,32 @@ namespace Serilog.Sinks.Datadog.Logs
 
                 try
                 {
-                    SelfLog.WriteLine("Sending payload to Datadog: {0}", payload);
                     var result = await _client.PostAsync(_url, content);
-                    SelfLog.WriteLine("Statuscode: {0}", result.StatusCode);
+                    lastResult = result;
+                    
                     if (result == null) { continue; }
                     if ((int)result.StatusCode >= 500) { continue; }
+                    if ((int)result.StatusCode == 429) { continue; }
                     if ((int)result.StatusCode >= 400) { break; }
                     if (result.IsSuccessStatusCode) { return; }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    lastException = e;
                     continue;
                 }
             }
-            SelfLog.WriteLine("Could not send payload to Datadog: {0}", payload);
+
+            if (lastException is null)
+            {
+                throw new CannotSendLogEventException(payload, payloadBuilder.LogEvents, lastResult);
+            }
+            else
+            {
+                throw new CannotSendLogEventException(payload, payloadBuilder.LogEvents, lastException);
+            }
         }
 
-        void IDatadogClient.Close() {}
+        void IDatadogClient.Close() { }
     }
 }
