@@ -29,12 +29,12 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int MaxBackoff = 30;
 
-        public DatadogHttpClient(string url, DatadogLogRenderer renderer, HttpClient client, int retries)
+        public DatadogHttpClient(string url, DatadogLogRenderer renderer, HttpClient client, int maxRetries)
         {
             _url = url;
             _renderer = renderer;
             _client = client;
-            _maxRetries = retries;
+            _maxRetries = maxRetries;
         }
 
         public Task WriteAsync(IReadOnlyCollection<LogEvent> events)
