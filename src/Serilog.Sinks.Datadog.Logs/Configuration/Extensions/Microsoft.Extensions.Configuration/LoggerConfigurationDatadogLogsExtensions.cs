@@ -6,6 +6,7 @@
 using Microsoft.Extensions.Configuration;
 using Serilog.Configuration;
 using Serilog.Events;
+using Serilog.Formatting;
 using Serilog.Sinks.Datadog.Logs;
 using System;
 
@@ -36,6 +37,10 @@ namespace Serilog
         /// </param>
         /// <param name="exceptionHandler">This function is called when an exception occurs when using 
         /// DatadogConfiguration.UseTCP=false (the default configuration)</param>
+        /// <param name="detectTCPDisconnection">Detect when the TCP connection is lost and recreate a new connection.</param>
+        /// <param name="client">A client implementation to send the logs.</param>
+        /// <param name="formatter">A formatter implementation to change the format of the logs.</param>
+        /// <param name="maxMessageSize">The maximum size in bytes of a message before it is split into chunks</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
@@ -51,7 +56,11 @@ namespace Serilog
             int? batchSizeLimit = null,
             TimeSpan? batchPeriod = null,
             int? queueLimit = null,
-            Action<Exception> exceptionHandler = null)
+            Action<Exception> exceptionHandler = null,
+            bool detectTCPDisconnection = false, 
+            IDatadogClient client = null,
+            ITextFormatter formatter = null,
+            int? maxMessageSize = null)
         {
             if (loggerConfiguration == null)
             {
@@ -63,7 +72,7 @@ namespace Serilog
             }
 
             var config = ApplyMicrosoftExtensionsConfiguration.ConfigureDatadogConfiguration(configuration, configurationSection);
-            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler);
+            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, client, formatter, maxMessageSize);
 
             return loggerConfiguration.Sink(sink, logLevel);
         }

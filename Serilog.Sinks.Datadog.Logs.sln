@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
@@ -6,6 +6,10 @@ MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D0A5A0BA-56F9-4C56-8785-8C9F23A3B411}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serilog.Sinks.Datadog.Logs", "src\Serilog.Sinks.Datadog.Logs\Serilog.Sinks.Datadog.Logs.csproj", "{897105F7-58A7-4849-98A8-EB8EDD450E47}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{CDDB8CB1-42E1-4722-8D83-4BB298ED5D16}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serilog.Sinks.Datadog.Logs.Tests", "tests\Serilog.Sinks.Datadog.Logs.Tests\Serilog.Sinks.Datadog.Logs.Tests.csproj", "{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,8 +36,21 @@ Global
 		{897105F7-58A7-4849-98A8-EB8EDD450E47}.Release|x64.Build.0 = Release|x64
 		{897105F7-58A7-4849-98A8-EB8EDD450E47}.Release|x86.ActiveCfg = Release|x86
 		{897105F7-58A7-4849-98A8-EB8EDD450E47}.Release|x86.Build.0 = Release|x86
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Debug|x64.Build.0 = Debug|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Debug|x86.Build.0 = Debug|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Release|x64.ActiveCfg = Release|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Release|x64.Build.0 = Release|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Release|x86.ActiveCfg = Release|Any CPU
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{897105F7-58A7-4849-98A8-EB8EDD450E47} = {D0A5A0BA-56F9-4C56-8785-8C9F23A3B411}
+		{54D06DEA-0F0B-4D2A-ADDA-2F5221EE036C} = {CDDB8CB1-42E1-4722-8D83-4BB298ED5D16}
 	EndGlobalSection
 EndGlobal

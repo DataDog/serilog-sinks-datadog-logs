@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.5.2
+* Improve the exception thrown when a request fails or retry times out. Thanks @cdhunt
+
+## 0.5.1
+* Allow using custom HttpClient and Url. Thanks @tomasz-soltysik
+
+## 0.5.0
+* Split logs larger than the max message size
+* Make max message size configurable
+* Raise max payload size to `5MB`
+
+## 0.4.0
+* Add support for custom `ITextFormatter`.
+
+## 0.3.8
+* Update Serilog.Sinks.PeriodicBatching to `3.0.0`. Thanks @dominikus1993 
+  
+## 0.3.7
+* Bump Newtonsoft.Json to `13.0.1`
+
+## 0.3.6
+
+* Remove unused UTF8 property #66. Thanks @jnyrup  
+* Support Datadog V2 intake API 
+* .NET 5 and .NET 6 support #68. Thanks @AndrewMD5  
+* Remove remaining traces of net6.0 #72. Thanks @jnyrup 
+
+## 0.3.5
+
+* Handle TCP disconnection leading to missing logs #64. Thanks @lokalan.
+
 ## 0.3.4
 
 * Add more net framework targets to solve incompatibility issues with NuGet version resolving to "nearest" .net framework vs compiler targets
