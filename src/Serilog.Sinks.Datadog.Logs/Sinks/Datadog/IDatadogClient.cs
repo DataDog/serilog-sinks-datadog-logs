@@ -21,6 +21,6 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Cleanup existing resources.
         /// </summary>
-        void Close();
+        void Close(); 
     }
 }
