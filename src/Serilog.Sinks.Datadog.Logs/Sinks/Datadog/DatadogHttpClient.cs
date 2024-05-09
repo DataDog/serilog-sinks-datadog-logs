@@ -37,20 +37,18 @@ namespace Serilog.Sinks.Datadog.Logs
             _maxRetries = maxRetries;
         }
 
-        public Task WriteAsync(IReadOnlyCollection<LogEvent> events)
+        public Task WriteAsync(IEnumerable<LogEvent> events)
         {
             var builtEvents = BuildEvents(events);
             var tasks = builtEvents.Select(post => Post(post));
             return Task.WhenAll(tasks);
         }
 
-        private List<JsonPayloadBuilder> BuildEvents(IReadOnlyCollection<LogEvent> events)
+        private List<JsonPayloadBuilder> BuildEvents(IEnumerable<LogEvent> events)
         {
             var builders = new List<JsonPayloadBuilder>();
             var builder = new JsonPayloadBuilder();
 
-            var chunkBuffer = new List<string>(events.Count());
-            var logEvents = new List<LogEvent>(events.Count());
             foreach (var logEvent in events)
             {
                 var payloads = _renderer.RenderDatadogEvents(logEvent);

@@ -22,7 +22,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             _formatter = formatter;
         }
 
-        public Task WriteAsync(IReadOnlyCollection<LogEvent> events)
+        public Task WriteAsync(IEnumerable<LogEvent> events)
         {
 
             foreach (var logEvent in events)

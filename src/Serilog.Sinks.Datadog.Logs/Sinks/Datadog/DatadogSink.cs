@@ -100,13 +100,12 @@ namespace Serilog.Sinks.Datadog.Logs
         {
             try
             {
-                var batch = events.ToArray();
-                if (!batch.Any())
+                if (!events.Any())
                 {
                     return;
                 }
 
-                var task = _client.WriteAsync(batch);
+                var task = _client.WriteAsync(events);
                 await RunTask(task);
             }
             catch (Exception e)
