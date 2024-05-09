@@ -22,22 +22,19 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly string _url;
         private readonly DatadogLogRenderer _renderer;
         private readonly HttpClient _client;
-
-        /// <summary>
-        /// Max number of retries when sending failed.
-        /// </summary>
-        private const int MaxRetries = 10;
+        private readonly int _maxRetries;
 
         /// <summary>
         /// Max backoff used when sending failed.
         /// </summary>
         private const int MaxBackoff = 30;
 
-        public DatadogHttpClient(string url, DatadogLogRenderer renderer, HttpClient client)
+        public DatadogHttpClient(string url, DatadogLogRenderer renderer, HttpClient client, int maxRetries)
         {
             _url = url;
             _renderer = renderer;
             _client = client;
+            _maxRetries = maxRetries;
         }
 
         public Task WriteAsync(IEnumerable<LogEvent> events)
@@ -79,7 +76,7 @@ namespace Serilog.Sinks.Datadog.Logs
             var content = new StringContent(payload, Encoding.UTF8, _content);
             HttpResponseMessage lastResult = null;
             Exception lastException = null;
-            for (int retry = 0; retry < MaxRetries; retry++)
+            for (int retry = 0; retry < _maxRetries; retry++)
             {
                 int backoff = (int)Math.Min(Math.Pow(2, retry), MaxBackoff);
                 if (retry > 0)

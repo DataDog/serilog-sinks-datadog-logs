@@ -17,19 +17,20 @@ namespace Serilog.Sinks.Datadog.Logs
         /// Create the DatadogConfiguration object or apply any configuration changes to it.
         /// </summary>
         /// <param name="datadogConfiguration">An optional externally-created DatadogConfiguration object to be updated with additional configuration values.</param>
-        /// <param name="config">A configuration section typically named "configurationSection".</param>
+        /// <param name="configurationSection">A configuration section typically named "configurationSection".</param>
         /// <returns>The "merged" DatadogConfiguration object.</returns>
-        internal static DatadogConfiguration ConfigureDatadogConfiguration(DatadogConfiguration datadogConfiguration, IConfigurationSection configurationOption)
+        internal static DatadogConfiguration ConfigureDatadogConfiguration(DatadogConfiguration datadogConfiguration, IConfigurationSection configurationSection)
         {
-            if (configurationOption == null || !configurationOption.GetChildren().Any()) return datadogConfiguration ?? new DatadogConfiguration();
+            if (configurationSection == null || !configurationSection.GetChildren().Any()) return datadogConfiguration ?? new DatadogConfiguration();
 
-            var section = configurationOption.Get<DatadogConfiguration>();
+            var section = configurationSection.Get<DatadogConfiguration>();
 
             return new DatadogConfiguration(
                 url: datadogConfiguration?.Url ?? section.Url,
                 port: datadogConfiguration?.Port ?? section.Port,
                 useSSL: datadogConfiguration?.UseSSL ?? section.UseSSL,
-                useTCP: datadogConfiguration?.UseTCP ?? section.UseTCP
+                useTCP: datadogConfiguration?.UseTCP ?? section.UseTCP,
+                maxRetries:datadogConfiguration?.MaxRetries ?? section.MaxRetries
             );
         }
     }
