@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="3.0.0" />
+    <PackageReference Include="Serilog.Sinks.PeriodicBatching" Version="3.1.0" />
     <PackageReference Include="Serilog" Version="2.9.0" />
     <Compile Remove="Configuration\Extensions\Microsoft.Extensions.Configuration\**\*.*" />
     <Compile Remove="Configuration\Extensions\System.Configuration\**\*.*" />
