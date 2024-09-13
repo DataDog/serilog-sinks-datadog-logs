@@ -34,6 +34,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _url = url;
             _renderer = renderer;
             _client = client;
+            _client.DefaultRequestHeaders.ConnectionClose = true;
             _maxRetries = maxRetries;
         }
 
