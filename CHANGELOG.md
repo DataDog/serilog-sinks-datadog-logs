@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.3
+* Disable `keep-alive` in `HttpClient`.
+* Bump dependency on Serilog.Sinks.PeriodicBatching to 3.1.0.
+* Renamed `logLevel` to `restrictedMinimumLogLevel` in LoggerConfiguration to be
+  consistent with the serilog recommendation. Thanks @tsackey.
+* Makes the number of retries configurable before the `IDataDogClient` gives up
+  logging by adding a new DataDogConfiguration.MaxRetries property. Thanks @dmitrynovik.
+
 ## 0.5.2
 * Improve the exception thrown when a request fails or retry times out. Thanks @cdhunt
 
