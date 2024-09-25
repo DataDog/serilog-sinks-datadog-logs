@@ -158,20 +158,20 @@ If you cannot use Serilog-expressions due to framework compatibility - you can i
 
 | argument                 | Type                   | Description                                             |
 | ------------------------ | ---------------------- | ------------------------------------------------------- |
-| `apiKey`                 | `string`               | Your Datadog API key.                                   |
-| `source`                 | `string`               | The integration name.                                   |
-| `service`                | `string`               | The service name.                                       |
-| `host`                   | `string`               | The host name.                                          |
-| `tags`                   | `string[]`             | Custom tags.                                            |
-| `configuration`          | `DatadogConfiguration` | The Datadog logs client configuration.                  |
-| `logLevel`               | `LogEventLevel`        | The minimum log level for the sink.                     |
-| `batchSizeLimit`         | `int`                  | The maximum number of events to emit in a single batch. |
-| `batchPeriod`            | `TimeSpan`             | The time to wait before emitting a new event batch.     |
-| `queueLimit`             | `int`                  | Maximum number of events to hold in the sink's internal queue, or `null` for an unbounded queue. The default is `10000` |
-| `exceptionHandler`       | `Action<Exception>`    | This function is called when an exception occurs when using `DatadogConfiguration.UseTCP=false` (the default configuration). |
-| `detectTCPDisconnection` | `bool`                 | Detect when the TCP connection is lost and recreate a new connection. |
-| `formatter`              | `ITextFormatter`       | A custom formatter implementation to change the format of the logs |
-| `maxMessageSize`         | `int`                  | The maximum size in bytes of a message before it is split into chunks |
+| `apiKey`                   | `string`               | Your Datadog API key.                                   |
+| `source`                   | `string`               | The integration name.                                   |
+| `service`                  | `string`               | The service name.                                       |
+| `host`                     | `string`               | The host name.                                          |
+| `tags`                     | `string[]`             | Custom tags.                                            |
+| `configuration`            | `DatadogConfiguration` | The Datadog logs client configuration.                  |
+| `restrictedToMinimumLevel` | `LogEventLevel`        | The minimum log level for the sink.                     |
+| `batchSizeLimit`           | `int`                  | The maximum number of events to emit in a single batch. |
+| `batchPeriod`              | `TimeSpan`             | The time to wait before emitting a new event batch.     |
+| `queueLimit`               | `int`                  | Maximum number of events to hold in the sink's internal queue, or `null` for an unbounded queue. The default is `10000` |
+| `exceptionHandler`         | `Action<Exception>`    | This function is called when an exception occurs when using `DatadogConfiguration.UseTCP=false` (the default configuration). |
+| `detectTCPDisconnection`   | `bool`                 | Detect when the TCP connection is lost and recreate a new connection. |
+| `formatter`                | `ITextFormatter`       | A custom formatter implementation to change the format of the logs |
+| `maxMessageSize`           | `int`                  | The maximum size in bytes of a message before it is split into chunks |
 
 **NOTE:** if `maxMessageSize` [exceeds the documented API limit of 1MB](https://docs.datadoghq.com/api/latest/logs/) - any payloads larger than 1MB will be dropped by the intake. 
 
