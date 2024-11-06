@@ -55,7 +55,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 var payloads = _renderer.RenderDatadogEvents(logEvent);
                 foreach (var payload in payloads)
                 {
-                    if (builder.Size()+payload.Length >= _maxPayloadSize || builder.Count() >= _maxMessageCount)
+                    if (builder.Size()+Encoding.UTF8.GetByteCount(payload) >= _maxPayloadSize || builder.Count() >= _maxMessageCount)
                     {
                         builders.Add(builder);
                         builder = new JsonPayloadBuilder();
