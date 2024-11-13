@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.4
+
+* Better payload fragmentation to avoid creating payload even slightly bigger than 5MB.
+
 ## 0.5.3
 * Disable `keep-alive` in `HttpClient`.
 * Bump dependency on Serilog.Sinks.PeriodicBatching to 3.1.0.
