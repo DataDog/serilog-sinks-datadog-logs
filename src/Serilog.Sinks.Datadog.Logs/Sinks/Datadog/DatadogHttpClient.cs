@@ -74,7 +74,6 @@ namespace Serilog.Sinks.Datadog.Logs
         private async Task Post(JsonPayloadBuilder payloadBuilder)
         {
             var payload = payloadBuilder.Build();
-            var content = new StringContent(payload, Encoding.UTF8, _content);
             HttpResponseMessage lastResult = null;
             Exception lastException = null;
             for (int retry = 0; retry < _maxRetries; retry++)
@@ -87,7 +86,9 @@ namespace Serilog.Sinks.Datadog.Logs
 
                 try
                 {
-                    var result = await _client.PostAsync(_url, content);
+                    // Certain older versions of .NET Core will automatically dispose of the Content object before PostAsync returns.
+                    // To guarantee portability, recreate the StringContent every retry.
+                    var result = await _client.PostAsync(_url, new StringContent(payload, Encoding.UTF8, _content));
                     lastResult = result;
                     
                     if (result == null) { continue; }
