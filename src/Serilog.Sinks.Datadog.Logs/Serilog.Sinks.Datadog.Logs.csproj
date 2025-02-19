@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netstandard1.3;net45;net461;net472;net5.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard1.3;net45;net461;net472;net5.0;net6.0</TargetFrameworks>
     <AssemblyName>Serilog.Sinks.Datadog.Logs</AssemblyName>
     <PackageId>Serilog.Sinks.Datadog.Logs</PackageId>
     <PackageVersion>0.5.2</PackageVersion>
