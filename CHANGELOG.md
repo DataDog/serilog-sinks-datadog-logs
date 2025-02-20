@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.5
+
+* Fix version incompatibility with PostAsync retry logic.
+
 ## 0.5.4
 
 * Better payload fragmentation to avoid creating payload even slightly bigger than 5MB.
