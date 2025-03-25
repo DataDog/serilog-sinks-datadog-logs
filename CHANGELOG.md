@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.6
+
+* Added back `logLevel` parameter as a legacy option for setting minimum log level. When both `logLevel` and `restrictedToMinimumLevel` are set, `restrictedToMinimumLevel` takes precedence.
+
 ## 0.5.5
 
 * Fix version incompatibility with PostAsync retry logic.
