@@ -164,7 +164,8 @@ If you cannot use Serilog-expressions due to framework compatibility - you can i
 | `host`                     | `string`               | The host name.                                          |
 | `tags`                     | `string[]`             | Custom tags.                                            |
 | `configuration`            | `DatadogConfiguration` | The Datadog logs client configuration.                  |
-| `restrictedToMinimumLevel` | `LogEventLevel`        | The minimum log level for the sink.                     |
+| `restrictedToMinimumLevel` | `LogEventLevel`        | The minimum log level for the sink. Takes precedence over `logLevel` when both are set. |
+| `logLevel`                | `LogEventLevel`        | Legacy parameter to set the minimum log level for the sink. Used only if `restrictedToMinimumLevel` is not set. |
 | `batchSizeLimit`           | `int`                  | The maximum number of events to emit in a single batch. |
 | `batchPeriod`              | `TimeSpan`             | The time to wait before emitting a new event batch.     |
 | `queueLimit`               | `int`                  | Maximum number of events to hold in the sink's internal queue, or `null` for an unbounded queue. The default is `10000` |
