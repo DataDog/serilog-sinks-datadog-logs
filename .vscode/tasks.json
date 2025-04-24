@@ -15,7 +15,7 @@
                 "/property:GenerateFullPaths=true",
                 // Do not generate summary otherwise it leads to duplicate errors in Problems panel
                 "/consoleloggerparameters:NoSummary",
-                "Console/Console.csproj"
+                "TestApp/Console.csproj"
             ],
             "group": "build",
             "presentation": {
@@ -35,7 +35,7 @@
                 "/property:GenerateFullPaths=true",
                 // Do not generate summary otherwise it leads to duplicate errors in Problems panel
                 "/consoleloggerparameters:NoSummary",
-                "Console/Console.csproj"
+                "TestApp/Console.csproj"
             ],
             "group": "build",
             "presentation": {
@@ -48,7 +48,7 @@
             "command": "mono",
             "type": "shell",
             "args": [
-                "${workspaceFolder}/Console/bin/Debug/net461/Console.exe"
+                "${workspaceFolder}/TestApp/bin/Debug/net461/Console.exe"
             ],
             "dependsOn": "build-net461",
             "group": "none",
@@ -67,7 +67,7 @@
                 "netcoreapp3.1",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary",
-                "Console/Console.csproj"
+                "TestApp/Console.csproj"
             ],
             "group": "build",
             "presentation": {
@@ -85,7 +85,7 @@
                 "netstandard2.0",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary",
-                "Console/Console.csproj"
+                "TestApp/Console.csproj"
             ],
             "group": "build",
             "presentation": {
