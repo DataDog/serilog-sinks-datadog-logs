@@ -1,0 +1,40 @@
+{
+    "name": "Serilog.Sinks.Datadog.Logs Development",
+    "dockerFile": "Dockerfile",
+    "features": {
+        "ghcr.io/devcontainers/features/dotnet:1": {
+            "version": "6.0",
+            "installUsingApt": false,
+            "additionalVersions": "3.1"
+        },
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "none"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-dotnettools.csharp",
+                "ms-dotnettools.vscode-dotnet-runtime",
+                "muhammad-sammy.csharp",
+                "ms-vscode.mono-debug",
+                "formulahendry.dotnet-test-explorer",
+                "ryanluker.vscode-coverage-gutters",
+                "editorconfig.editorconfig"
+            ],
+            "settings": {
+                "omnisharp.enableRoslynAnalyzers": true,
+                "omnisharp.enableEditorConfigSupport": true,
+                "dotnet.defaultSolution": "Serilog.Sinks.Datadog.Logs.sln",
+                "debug.allowBreakpointsEverywhere": true,
+                "mono.autoDetect": true,
+                "mono.path": "/usr/bin/mono"
+            }
+        }
+    },
+    "postCreateCommand": "dotnet restore && dotnet build",
+    "remoteUser": "vscode",
+    "containerEnv": {
+        "DOTNET_NOLOGO": "1"
+    }
+}

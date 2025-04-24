@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": ".NET Core Launch (console)",
+            "name": "Run Net6.0",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build",
+            "preLaunchTask": "build-net6.0",
             "program": "${workspaceFolder}/Console/bin/Debug/net6.0/Console.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Console",
@@ -16,11 +16,22 @@
             "stopAtEntry": false
         },
         {
-            "name": "launch4",
+            "name": "Run Net461 (Mono)",
+            "type": "mono",
+            "request": "launch",
+            "preLaunchTask": "build-net461",
+            "program": "${workspaceFolder}/Console/bin/Debug/net461/Console.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/Console",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "Run NetCoreApp3.1",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build4",
-            "program": "${workspaceFolder}/Console/bin/Debug/net461/Console.exe",
+            "preLaunchTask": "build-netcoreapp3.1",
+            "program": "${workspaceFolder}/Console/bin/Debug/netcoreapp3.1/Console.dll",
             "args": [],
             "cwd": "${workspaceFolder}/Console",
             "console": "internalConsole",
@@ -29,14 +40,15 @@
         {
             "name": ".NET Core Attach",
             "type": "coreclr",
-            "request": "launch",
+            "request": "attach",
             "processId": "${command:pickProcess}"
         },
         {
-            "name": "Run",
+            "name": "Run Tests",
             "type": "coreclr",
-            "request": "attach",
-            "processId": "${command:pickProcess}"
+            "request": "launch",
+            "preLaunchTask": "test",
+            "console": "internalConsole"
         }
     ]
 }

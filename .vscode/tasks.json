@@ -4,8 +4,8 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "build",
-            "command": "/usr/local/share/dotnet/dotnet",
+            "label": "build-net6.0",
+            "command": "dotnet",
             "type": "shell",
             "args": [
                 "build",
@@ -16,7 +16,7 @@
                 // Do not generate summary otherwise it leads to duplicate errors in Problems panel
                 "/consoleloggerparameters:NoSummary",
                 "Console/Console.csproj"
-            ],            
+            ],
             "group": "build",
             "presentation": {
                 "reveal": "silent"
@@ -24,7 +24,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "build4",
+            "label": "build-net461",
             "command": "dotnet",
             "type": "shell",
             "args": [
@@ -36,10 +36,78 @@
                 // Do not generate summary otherwise it leads to duplicate errors in Problems panel
                 "/consoleloggerparameters:NoSummary",
                 "Console/Console.csproj"
-            ],            
+            ],
             "group": "build",
             "presentation": {
                 "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "run-net461-mono",
+            "command": "mono",
+            "type": "shell",
+            "args": [
+                "${workspaceFolder}/Console/bin/Debug/net461/Console.exe"
+            ],
+            "dependsOn": "build-net461",
+            "group": "none",
+            "presentation": {
+                "reveal": "always"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "build-netcoreapp3.1",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "build",
+                "-f",
+                "netcoreapp3.1",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary",
+                "Console/Console.csproj"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "build-netstandard2.0",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "build",
+                "-f",
+                "netstandard2.0",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary",
+                "Console/Console.csproj"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "silent"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "test",
+            "command": "dotnet",
+            "type": "shell",
+            "args": [
+                "test",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always"
             },
             "problemMatcher": "$msCompile"
         }
