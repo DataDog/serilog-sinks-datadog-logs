@@ -200,9 +200,10 @@ From [Serilog.Sinks.Async documentation](https://github.com/serilog/serilog-sink
 ## Development Environment 
 This repository includes a devcontainer configuration for VS Code. To use it:
 
-1. Install VS Code and Docker
+1. Install VS Code and Docker.
 2. Open in VS Code with Dev Containers extension
-3. VS Code will build and start the container automatically
+
+VS Code will build and start the container automatically.
 
 The devcontainer includes:
 - .NET SDK 8.0
@@ -210,14 +211,14 @@ The devcontainer includes:
 - VS Code debugging configurations for .NET Core and Mono
 
 To test changes:
-- Run the tests in the test explorer
-- Use the TestApp to send real logs or debug changes
+- Run the tests in the test explorer.
+- Use the TestApp to send real logs or debug changes.
 
 ## Packaging 
 To create a release package:
 
-1. Update version in `src/Serilog.Sinks.Datadog.Logs.csproj`
-2. Update version in `src/Serilog.Sinks.Datadog.Logs/Sinks/Datadog/Consts.cs`
-3. Add a new entry in `CHANGELOG.md` describing the changes
-4. Push a tag if needed
-5. run `./build-package.sh`
+1. Update the version in `src/Serilog.Sinks.Datadog.Logs.csproj`.
+2. Update the version in `src/Serilog.Sinks.Datadog.Logs/Sinks/Datadog/Consts.cs`.
+3. Add a new entry in `CHANGELOG.md` describing the changes.
+4. Push a tag if needed.
+5. Run `./build-package.sh`.
