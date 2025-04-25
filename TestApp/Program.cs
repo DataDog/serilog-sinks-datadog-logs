@@ -13,7 +13,7 @@ using Serilog.Templates;
 namespace TestApp
 {
 
-    public class DatadogJsonNoTemplateFormatter: ExpressionTemplate
+    public class DatadogJsonNoTemplateFormatter : ExpressionTemplate
     {
         public DatadogJsonNoTemplateFormatter() : base(@"{ {
             Timestamp: @t,
@@ -21,9 +21,9 @@ namespace TestApp
             message: @m, 
             Properties: {..@p},
             Renderings: @r}
-        }") {}
+        }") { }
     }
-    class Program
+    static class Program
     {
         static void Main(string[] args)
         {
@@ -33,44 +33,47 @@ namespace TestApp
                 .AddJsonFile(path: "appsettings.json")
                 .Build();
 
+            // TODO: inject API key into config. 
             // configuration.GetSection("Serilog").GetSection("WriteTo").GetChildren().FirstOrDefault().GetSection("Args")["apiKey"] = "FOOBAR";
             configuration["Serilog:WriteTo:1:Args:apiKey"] = "SOME_API_KEY";
-            
+
 
             // Log.Logger.d
             Log.Logger = new LoggerConfiguration()
                 // .ReadFrom.Configuration(configuration)
                 // .Enrich.FromLogContext()
-                .WriteTo.DatadogLogs(configuration["Serilog:WriteTo:1:Args:apiKey"], exceptionHandler: (x) => {
+                .WriteTo.DatadogLogs(configuration["Serilog:WriteTo:1:Args:apiKey"], exceptionHandler: (x) =>
+                {
                     System.Console.WriteLine(x);
-                } )
-                // .WriteTo.DatadogLogs("REDACTED", service: "foobar", host: "brian-host", tags: new string[] {"foo:bar", "apple:orange", "version:1.2.3"}, formatter: new DatadogJsonNoTemplateFormatter(), maxMessageSize: 1000 * 1000)
+                })
+                // .WriteTo.DatadogLogs("REDACTED", service: "foobar", host: "test-host", tags: new string[] {"foo:bar", "apple:orange", "version:1.2.3"}, formatter: new DatadogJsonNoTemplateFormatter(), maxMessageSize: 1000 * 1000)
                 .CreateLogger();
 
 
 
-        for (var i = 0; i < 10; i++) {
-            Log.Information("foo " + i);
-        }
+            for (var i = 0; i < 10; i++)
+            {
+                Log.Information("foo " + i);
+            }
 
+
+            // Read a log file
             // var bigLog = System.IO.File.ReadAllText("./log.txt");
             // for (var i = 0; i < 100; i++) {
-                // Log.Information(bigLog);
+            // Log.Information(bigLog);
             // }   
-                
-            // An example
 
-//             var position = new { Latitude = 25, Longitude = 134 };
-// var elapsedMs = 34;
+            // Custom attributes
+            // var position = new { Latitude = 25, Longitude = 134 };
+            // var elapsedMs = 34;
+            // Log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
 
-// Log.Information("Processed {@Position} in {Elapsed:000} ms.", position, elapsedMs);
-
-//             using (LogContext.PushProperty("A", 1)) {
-//                 Log.Information("abc");
+            //             using (LogContext.PushProperty("A", 1)) {
+            //                 Log.Information("abc");
 
 
-            
-//             }
+
+            //             }
             Log.CloseAndFlush();
         }
     }
