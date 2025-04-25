@@ -178,15 +178,11 @@ If you cannot use Serilog-expressions due to framework compatibility - you can i
 
 ## How to build the NuGet package
 
-Bump the version in `src/Serilog.Sinks.Datadog.Logs.csproj` and merge your branch
-
-Run these commands in the project root folder
-
-```bash
-git checkout master && git pull
-msbuild Serilog.Sinks.Datadog.Logs.sln /t:restore /p:Configuration=Release
-msbuild Serilog.Sinks.Datadog.Logs.sln /t:pack /p:Configuration=Release
-```
+1. Update the version in `src/Serilog.Sinks.Datadog.Logs.csproj`.
+2. Update the version in `src/Serilog.Sinks.Datadog.Logs/Sinks/Datadog/Consts.cs`.
+3. Add a new entry in `CHANGELOG.md` describing the changes.
+4. Push a tag if needed.
+5. Run `./build-package.sh`.
 
 You can find the `.nupkg` file at `src/Serilog.Sinks.Datadog.Logs/bin/Release/Serilog.Sinks.Datadog.Logs.<version>.nupkg`
 
@@ -213,12 +209,3 @@ The devcontainer includes:
 To test changes:
 - Run the tests in the test explorer.
 - Use the TestApp to send real logs or debug changes.
-
-## Packaging 
-To create a release package:
-
-1. Update the version in `src/Serilog.Sinks.Datadog.Logs.csproj`.
-2. Update the version in `src/Serilog.Sinks.Datadog.Logs/Sinks/Datadog/Consts.cs`.
-3. Add a new entry in `CHANGELOG.md` describing the changes.
-4. Push a tag if needed.
-5. Run `./build-package.sh`.
