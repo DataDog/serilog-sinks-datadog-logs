@@ -201,7 +201,7 @@ From [Serilog.Sinks.Async documentation](https://github.com/serilog/serilog-sink
 This repository includes a devcontainer configuration for VS Code. To use it:
 
 1. Install VS Code and Docker.
-2. Open in VS Code with Dev Containers extension
+2. Open the project in VS Code with the Dev Containers extension.
 
 VS Code will build and start the container automatically.
 
