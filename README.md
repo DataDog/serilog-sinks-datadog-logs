@@ -156,37 +156,33 @@ If you cannot use Serilog-expressions due to framework compatibility - you can i
 
 [`DatadogLogs`](https://github.com/DataDog/serilog-sinks-datadog-logs/blob/master/src/Serilog.Sinks.Datadog.Logs/Configuration/Extensions/System.Configuration/LoggerConfigurationDatadogLogsExtensions.cs#L40) supports the following arguments:
 
-| argument                 | Type                   | Description                                             |
-| ------------------------ | ---------------------- | ------------------------------------------------------- |
-| `apiKey`                   | `string`               | Your Datadog API key.                                   |
-| `source`                   | `string`               | The integration name.                                   |
-| `service`                  | `string`               | The service name.                                       |
-| `host`                     | `string`               | The host name.                                          |
-| `tags`                     | `string[]`             | Custom tags.                                            |
-| `configuration`            | `DatadogConfiguration` | The Datadog logs client configuration.                  |
-| `restrictedToMinimumLevel` | `LogEventLevel`        | The minimum log level for the sink. Takes precedence over `logLevel` when both are set. |
-| `logLevel`                | `LogEventLevel`        | Legacy parameter to set the minimum log level for the sink. Used only if `restrictedToMinimumLevel` is not set. |
-| `batchSizeLimit`           | `int`                  | The maximum number of events to emit in a single batch. |
-| `batchPeriod`              | `TimeSpan`             | The time to wait before emitting a new event batch.     |
-| `queueLimit`               | `int`                  | Maximum number of events to hold in the sink's internal queue, or `null` for an unbounded queue. The default is `10000` |
+| argument                   | Type                   | Description                                                                                                                  |
+| -------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `apiKey`                   | `string`               | Your Datadog API key.                                                                                                        |
+| `source`                   | `string`               | The integration name.                                                                                                        |
+| `service`                  | `string`               | The service name.                                                                                                            |
+| `host`                     | `string`               | The host name.                                                                                                               |
+| `tags`                     | `string[]`             | Custom tags.                                                                                                                 |
+| `configuration`            | `DatadogConfiguration` | The Datadog logs client configuration.                                                                                       |
+| `restrictedToMinimumLevel` | `LogEventLevel`        | The minimum log level for the sink. Takes precedence over `logLevel` when both are set.                                      |
+| `logLevel`                 | `LogEventLevel`        | Legacy parameter to set the minimum log level for the sink. Used only if `restrictedToMinimumLevel` is not set.              |
+| `batchSizeLimit`           | `int`                  | The maximum number of events to emit in a single batch.                                                                      |
+| `batchPeriod`              | `TimeSpan`             | The time to wait before emitting a new event batch.                                                                          |
+| `queueLimit`               | `int`                  | Maximum number of events to hold in the sink's internal queue, or `null` for an unbounded queue. The default is `10000`      |
 | `exceptionHandler`         | `Action<Exception>`    | This function is called when an exception occurs when using `DatadogConfiguration.UseTCP=false` (the default configuration). |
-| `detectTCPDisconnection`   | `bool`                 | Detect when the TCP connection is lost and recreate a new connection. |
-| `formatter`                | `ITextFormatter`       | A custom formatter implementation to change the format of the logs |
-| `maxMessageSize`           | `int`                  | The maximum size in bytes of a message before it is split into chunks |
+| `detectTCPDisconnection`   | `bool`                 | Detect when the TCP connection is lost and recreate a new connection.                                                        |
+| `formatter`                | `ITextFormatter`       | A custom formatter implementation to change the format of the logs                                                           |
+| `maxMessageSize`           | `int`                  | The maximum size in bytes of a message before it is split into chunks                                                        |
 
 **NOTE:** if `maxMessageSize` [exceeds the documented API limit of 1MB](https://docs.datadoghq.com/api/latest/logs/) - any payloads larger than 1MB will be dropped by the intake. 
 
 ## How to build the NuGet package
 
-Bump the version in `src/Serilog.Sinks.Datadog.Logs.csproj` and merge your branch
-
-Run these commands in the project root folder
-
-```bash
-git checkout master && git pull
-msbuild Serilog.Sinks.Datadog.Logs.sln /t:restore /p:Configuration=Release
-msbuild Serilog.Sinks.Datadog.Logs.sln /t:pack /p:Configuration=Release
-```
+1. Update the version in `src/Serilog.Sinks.Datadog.Logs.csproj`.
+2. Update the version in `src/Serilog.Sinks.Datadog.Logs/Sinks/Datadog/Consts.cs`.
+3. Add a new entry in `CHANGELOG.md` describing the changes.
+4. Push a tag if needed.
+5. Run `./build-package.sh`.
 
 You can find the `.nupkg` file at `src/Serilog.Sinks.Datadog.Logs/bin/Release/Serilog.Sinks.Datadog.Logs.<version>.nupkg`
 
@@ -195,3 +191,21 @@ As `Serilog.Sinks.Datadog.Logs` implements [Serilog.Sinks.PeriodicBatching](http
 
 From [Serilog.Sinks.Async documentation](https://github.com/serilog/serilog-sinks-async#serilogsinksasync---):	
 > Note: many of the network-based sinks (CouchDB, Elasticsearch, MongoDB, Seq, Splunk...) already perform asynchronous batching natively and do not benefit from this wrapper.
+
+
+## Development Environment 
+This repository includes a devcontainer configuration for VS Code. To use it:
+
+1. Install VS Code and Docker.
+2. Open the project in VS Code with the Dev Containers extension.
+
+VS Code will build and start the container automatically.
+
+The devcontainer includes:
+- .NET SDK 8.0
+- Mono for .NET Framework support
+- VS Code debugging configurations for .NET Core and Mono
+
+To test changes:
+- Run the tests in the test explorer.
+- Use the TestApp to send real logs or debug changes.
