@@ -9,6 +9,7 @@ using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Sinks.Datadog.Logs;
 using System;
+using Serilog.Formatting.Json;
 
 namespace Serilog
 {
@@ -62,7 +63,8 @@ namespace Serilog
             bool detectTCPDisconnection = false, 
             IDatadogClient client = null,
             ITextFormatter formatter = null,
-            int? maxMessageSize = null)
+            int? maxMessageSize = null,
+            JsonValueFormatter jsonValueFormatter = null)
         {
             if (loggerConfiguration == null)
             {
@@ -74,7 +76,7 @@ namespace Serilog
             }
 
             var config = ApplyMicrosoftExtensionsConfiguration.ConfigureDatadogConfiguration(configuration, configurationSection);
-            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, client, formatter, maxMessageSize);
+            var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, client, formatter, maxMessageSize, jsonValueFormatter);
 
             // Use restrictedToMinimumLevel if set, otherwise use logLevel
             var effectiveLevel = restrictedToMinimumLevel != LevelAlias.Minimum ? restrictedToMinimumLevel : logLevel;

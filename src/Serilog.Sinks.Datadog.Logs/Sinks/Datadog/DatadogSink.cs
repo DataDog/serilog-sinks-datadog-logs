@@ -13,6 +13,7 @@ using Serilog.Core;
 using Serilog.Debugging;
 using Serilog.Events;
 using Serilog.Formatting;
+using Serilog.Formatting.Json;
 using Serilog.Sinks.PeriodicBatching;
 
 [assembly:
@@ -50,9 +51,9 @@ namespace Serilog.Sinks.Datadog.Logs
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags,
             DatadogConfiguration config, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false,
-            IDatadogClient client = null, ITextFormatter formatter = null, int? maxMessageSize = null)
+            IDatadogClient client = null, ITextFormatter formatter = null, int? maxMessageSize = null, JsonValueFormatter jsonValueFormatter = null)
         {
-            formatter = formatter ?? new DatadogJsonFormatter();
+            formatter = formatter ?? new DatadogJsonFormatter(jsonValueFormatter);
             var enricher = new DatadogLogRenderer(source, service, host, tags, maxMessageSize ?? DefaultMaxMessageSize, formatter);
             _client = client ??
                       CreateDatadogClient(apiKey, enricher, config, detectTCPDisconnection);
@@ -73,7 +74,8 @@ namespace Serilog.Sinks.Datadog.Logs
             bool detectTCPDisconnection = false,
             IDatadogClient client = null,
             ITextFormatter formatter = null,
-            int? maxMessageSize = null)
+            int? maxMessageSize = null,
+            JsonValueFormatter jsonValueFormatter = null)
         {
             var options = new PeriodicBatchingSinkOptions()
             {
@@ -87,7 +89,7 @@ namespace Serilog.Sinks.Datadog.Logs
             }
 
             var sink = new DatadogSink(apiKey, source, service, host, tags, config, exceptionHandler,
-                detectTCPDisconnection, client, formatter, maxMessageSize);
+                detectTCPDisconnection, client, formatter, maxMessageSize, jsonValueFormatter);
 
             return new PeriodicBatchingSink(sink, options);
         }
