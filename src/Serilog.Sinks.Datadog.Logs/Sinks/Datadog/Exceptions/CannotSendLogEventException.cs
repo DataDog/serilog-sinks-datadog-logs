@@ -17,7 +17,7 @@ namespace Serilog.Sinks.Datadog.Logs
         }
 
         public CannotSendLogEventException(string payload, IEnumerable<LogEvent> logEvents, System.Exception ex)
-            : base($"Could not send payload to Datadog: {ex.Message} - {payload}.", logEvents)
+            : base($"Could not send payload to Datadog: {ex.Message}{(ex.InnerException != null ? $" Inner exception: {ex.InnerException.Message}" : "")} - {payload}.", logEvents)
         {
         }
 

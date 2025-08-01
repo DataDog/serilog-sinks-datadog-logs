@@ -55,7 +55,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 var payloads = _renderer.RenderDatadogEvents(logEvent);
                 foreach (var payload in payloads)
                 {
-                    if (builder.Size()+Encoding.UTF8.GetByteCount(payload) >= _maxPayloadSize || builder.Count() >= _maxMessageCount)
+                    if (builder.Size() + Encoding.UTF8.GetByteCount(payload) >= _maxPayloadSize || builder.Count() >= _maxMessageCount)
                     {
                         builders.Add(builder);
                         builder = new JsonPayloadBuilder();
@@ -90,7 +90,7 @@ namespace Serilog.Sinks.Datadog.Logs
                     // To guarantee portability, recreate the StringContent every retry.
                     var result = await _client.PostAsync(_url, new StringContent(payload, Encoding.UTF8, _content));
                     lastResult = result;
-                    
+
                     if (result == null) { continue; }
                     if ((int)result.StatusCode >= 500) { continue; }
                     if ((int)result.StatusCode == 429) { continue; }

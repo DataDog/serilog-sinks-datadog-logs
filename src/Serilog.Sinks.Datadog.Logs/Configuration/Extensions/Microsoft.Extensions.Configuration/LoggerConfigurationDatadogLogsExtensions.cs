@@ -34,7 +34,7 @@ namespace Serilog
         /// <param name="batchPeriod">The time to wait before emitting a new event batch.</param>
         /// <param name="queueLimit">
         /// Maximum number of events to hold in the sink's internal queue, or <c>null</c>
-        /// for an unbounded queue. The default is <c>10000</c>
+        /// for an unbounded queue. The default is <c>100000</c>
         /// </param>
         /// <param name="exceptionHandler">This function is called when an exception occurs when using 
         /// DatadogConfiguration.UseTCP=false (the default configuration)</param>
@@ -57,9 +57,9 @@ namespace Serilog
             LogEventLevel logLevel = LevelAlias.Minimum,
             int? batchSizeLimit = null,
             TimeSpan? batchPeriod = null,
-            int? queueLimit = null,
+            int? queueLimit = DatadogSink.UseDefaultQueueLimit,
             Action<Exception> exceptionHandler = null,
-            bool detectTCPDisconnection = false, 
+            bool detectTCPDisconnection = false,
             IDatadogClient client = null,
             ITextFormatter formatter = null,
             int? maxMessageSize = null)
