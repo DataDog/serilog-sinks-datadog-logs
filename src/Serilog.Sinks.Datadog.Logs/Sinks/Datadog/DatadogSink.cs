@@ -47,6 +47,11 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         private const int DefaultMaxMessageSize = 256 * 1000;
 
+        /// <summary>
+        /// A special queue limit setting indicating that the default value for PeriodicBatchingSinkOptions' QueueLimit should be used.
+        /// </summary>
+        public const int UseDefaultQueueLimit = -1;
+
 
         public DatadogSink(string apiKey, string source, string service, string host, string[] tags,
             DatadogConfiguration config, Action<Exception> exceptionHandler = null, bool detectTCPDisconnection = false,
@@ -68,7 +73,7 @@ namespace Serilog.Sinks.Datadog.Logs
             DatadogConfiguration config,
             int? batchSizeLimit = null,
             TimeSpan? batchPeriod = null,
-            int? queueLimit = null,
+            int? queueLimit = UseDefaultQueueLimit,
             Action<Exception> exceptionHandler = null,
             bool detectTCPDisconnection = false,
             IDatadogClient client = null,
@@ -81,9 +86,9 @@ namespace Serilog.Sinks.Datadog.Logs
                 Period = batchPeriod ?? DefaultBatchPeriod,
             };
 
-            if (queueLimit.HasValue)
+            if (!queueLimit.HasValue || queueLimit.Value != UseDefaultQueueLimit)
             {
-                options.QueueLimit = queueLimit.Value;
+                options.QueueLimit = queueLimit;
             }
 
             var sink = new DatadogSink(apiKey, source, service, host, tags, config, exceptionHandler,

@@ -168,7 +168,7 @@ If you cannot use Serilog-expressions due to framework compatibility - you can i
 | `logLevel`                 | `LogEventLevel`        | Legacy parameter to set the minimum log level for the sink. Used only if `restrictedToMinimumLevel` is not set.              |
 | `batchSizeLimit`           | `int`                  | The maximum number of events to emit in a single batch.                                                                      |
 | `batchPeriod`              | `TimeSpan`             | The time to wait before emitting a new event batch.                                                                          |
-| `queueLimit`               | `int`                  | Maximum number of events to hold in the sink's internal queue, or `null` for an unbounded queue. The default is `10000`      |
+| `queueLimit`               | `int`                  | Maximum number of events to hold in the sink's internal queue, or `null` for an unbounded queue. The default is `100000`      |
 | `exceptionHandler`         | `Action<Exception>`    | This function is called when an exception occurs when using `DatadogConfiguration.UseTCP=false` (the default configuration). |
 | `detectTCPDisconnection`   | `bool`                 | Detect when the TCP connection is lost and recreate a new connection.                                                        |
 | `formatter`                | `ITextFormatter`       | A custom formatter implementation to change the format of the logs                                                           |
