@@ -4,6 +4,3 @@
 
 
 *                     @DataDog/agent-log-pipelines
-
-# Documentation
-*.md                  @DataDog/documentation
