@@ -14,8 +14,13 @@ namespace Serilog.Sinks.Datadog.Logs
 {
     public class DatadogJsonFormatter : ITextFormatter
     {
-
-        readonly JsonValueFormatter _valueFormatter = new JsonValueFormatter();
+        private readonly JsonValueFormatter _valueFormatter;
+        
+        public DatadogJsonFormatter(JsonValueFormatter jsonValueFormatter = null)
+        {
+            _valueFormatter = jsonValueFormatter ?? new JsonValueFormatter();
+        }
+        
         public void Format(LogEvent logEvent, TextWriter output)
         {
             // Largely based on https://github.com/serilog/serilog-formatting-compact/blob/dev/src/Serilog.Formatting.Compact/Formatting/Compact/RenderedCompactJsonFormatter.cs

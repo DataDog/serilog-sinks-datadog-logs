@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using NUnit.Framework;
 using Serilog.Events;
 using Serilog.Formatting;
+using Serilog.Formatting.Json;
 
 namespace Serilog.Sinks.Datadog.Logs.Tests
 {
@@ -17,6 +18,11 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         {
             logEvent.RenderMessage(output);
         }
+    }
+
+    class ValueHolder
+    {
+        public string Value { get; set; }
     }
 
     [TestFixture]
@@ -155,6 +161,36 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
 
             // Check that we didn't lose any bytes in the source log
             Assert.AreEqual(targetSize, truncated[0].Count() + truncated[1].Count() - (2 * "...TRUNCATED...".Count()));
+        }
+
+        [Test]
+        public void TestCustomJsonValueFormatter()
+        {
+            const string apiKey = "NOT_AN_API_KEY";
+            var logFormatter = new DatadogLogRenderer("TEST", "TEST", "localhost", new[] { "the", "coolest", "test" }, 256 * 1000, new DatadogJsonFormatter(jsonValueFormatter: new JsonValueFormatter(typeTagName: null)));
+            var noop = new NoopClient(apiKey, logFormatter);
+            using (var log = new LoggerConfiguration().WriteTo.DatadogLogs(apiKey, client: noop).CreateLogger())
+            {
+                var valueHolder = new ValueHolder{ Value = "some_value" };
+                var positions = new dynamic[]
+                {
+                    new { Latitude = byte.MinValue, Longitude = byte.MaxValue },
+                    new { Latitude = short.MinValue, Longitude = short.MaxValue },
+                    new { Latitude = int.MinValue, Longitude = int.MaxValue },
+                    new { Latitude = long.MinValue, Longitude = long.MaxValue }
+                };
+                const int elapsedMs = 34;
+                Assert.DoesNotThrow(() => log.Information("Processed {@Positions} in {Elapsed:000} ms.", new Dictionary<string, object>
+                {
+                    { "positions", positions },
+                    { "creator", "ACME" },
+                    { "value_holder", valueHolder },
+                }, elapsedMs));
+            }
+
+            // Scrub the timestamp since this changes
+            var scrubbed = Regex.Replace(noop.SentPayloads[0], "\\\"timestamp.*?,", "");
+            Assert.AreEqual(@"{""ddsource"":""TEST"",""service"":""TEST"",""host"":""localhost"",""ddtags"":""the,coolest,test"",""message"":""{\\""message\"":\""Processed [(\\\""positions\\\"": [{ Latitude: 0, Longitude: 255 }, { Latitude: -32768, Longitude: 32767 }, { Latitude: -2147483648, Longitude: 2147483647 }, { Latitude: -9223372036854775808, Longitude: 9223372036854775807 }]), (\\\""creator\\\"": \\\""ACME\\\""), (\\\""value_holder\\\"": ValueHolder { Value: \\\""some_value\\\"" })] in 034 ms.\"",\""MessageTemplate\"":\""Processed {@Positions} in {Elapsed:000} ms.\"",\""level\"":\""Information\"",\""Properties\"":{\""Positions\"":{\""positions\"":[{\""Latitude\"":0,\""Longitude\"":255},{\""Latitude\"":-32768,\""Longitude\"":32767},{\""Latitude\"":-2147483648,\""Longitude\"":2147483647},{\""Latitude\"":-9223372036854775808,\""Longitude\"":9223372036854775807}],\""creator\"":\""ACME\"",\""value_holder\"":{\""Value\"":\""some_value\""}},\""Elapsed\"":34},\""Renderings\"":[\""034\""]}""}", scrubbed);
         }
     }
 }
