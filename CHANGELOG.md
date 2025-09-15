@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+
+# Expose JsonValueFormatter to allow for custom modification of log fields
+# Fix `queueLimit` behavior to more closely align with the documented expectations and the Serilog standards
+
 ## 0.5.6
 
 * Added back `logLevel` parameter as a legacy option for setting minimum log level. When both `logLevel` and `restrictedToMinimumLevel` are set, `restrictedToMinimumLevel` takes precedence.
