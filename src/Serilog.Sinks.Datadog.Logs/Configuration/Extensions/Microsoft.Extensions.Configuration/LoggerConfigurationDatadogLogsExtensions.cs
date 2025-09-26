@@ -43,6 +43,7 @@ namespace Serilog
         /// <param name="client">A client implementation to send the logs.</param>
         /// <param name="formatter">A formatter implementation to change the format of the logs.</param>
         /// <param name="maxMessageSize">The maximum size in bytes of a message before it is split into chunks</param>
+        /// <param name="jsonValueFormatter">Optional override of the default Serilog JsonValueFormatter.</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
