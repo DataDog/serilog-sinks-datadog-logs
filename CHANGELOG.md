@@ -2,8 +2,8 @@
 
 ## 0.6.0
 
-# Expose JsonValueFormatter to allow for custom modification of log fields
-# Fix `queueLimit` behavior to more closely align with the documented expectations and the Serilog standards
+* Expose JsonValueFormatter to allow for custom modification of log fields
+* Fix `queueLimit` behavior to more closely align with the documented expectations and the Serilog standards
 
 ## 0.5.6
 
