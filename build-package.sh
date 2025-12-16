@@ -6,7 +6,9 @@ set -e
 # Default configuration
 CONFIG="Release"
 SOLUTION="Serilog.Sinks.Datadog.Logs.sln"
-OUTPUT_DIR="./artifacts"
+OUTPUT_DIR="artifacts"
+
+PROJECT_DIR="src/Serilog.Sinks.Datadog.Logs"
 
 # Process arguments
 while [[ $# -gt 0 ]]; do
@@ -28,7 +30,7 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  --config, -c CONFIG     Build configuration (Debug/Release, default: Release)"
       echo "  --solution, -s SOLUTION Solution file to build (default: Serilog.Sinks.Datadog.Logs.sln)"
-      echo "  --output, -o DIR        Output directory for packages (default: ./artifacts)"
+      echo "  --output, -o DIR        Output directory for packages (default: artifacts)"
       echo "  --help, -h              Show this help message"
       exit 0
       ;;
@@ -59,4 +61,4 @@ echo "Creating NuGet package..."
 dotnet msbuild "$SOLUTION" /t:pack /p:Configuration="$CONFIG" /p:PackageOutputPath="$OUTPUT_DIR"
 
 echo "Build completed successfully!"
-echo "Packages are available in: $OUTPUT_DIR"
+echo "Packages are available in: $PROJECT_DIR/$OUTPUT_DIR"

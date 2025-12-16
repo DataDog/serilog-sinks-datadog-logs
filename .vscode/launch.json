@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run Net6.0",
+            "name": "Run Net6.0 TestApp",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build-net6.0",
@@ -16,7 +16,7 @@
             "stopAtEntry": false
         },
         {
-            "name": "Run Net461 (Mono)",
+            "name": "Run Net461 (Mono) TestApp",
             "type": "mono",
             "request": "launch",
             "preLaunchTask": "build-net461",
@@ -24,7 +24,6 @@
             "args": [],
             "cwd": "${workspaceFolder}/TestApp",
             "console": "internalConsole",
-            "stopAtEntry": false
         },
         {
             "name": ".NET Core Attach",
@@ -34,10 +33,13 @@
         },
         {
             "name": "Run Tests",
+            "program": "dotnet",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "test",
-            "console": "internalConsole"
+            "args": [
+                "test"
+            ],
+            "console": "internalConsole",
         }
     ]
 }
