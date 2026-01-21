@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
 
+using System;
 using Serilog.Events;
 using System.Collections.Generic;
 using System.Text;
@@ -28,7 +29,8 @@ namespace Serilog.Sinks.Datadog.Logs
                 new LogEventProperty("ddsource", new ScalarValue(source ?? CSHARP)),
             };
             if (service != null) { props.Add(new LogEventProperty("service", new ScalarValue(service))); }
-            if (host != null) { props.Add(new LogEventProperty("host", new ScalarValue(host))); }
+            var resolvedHost = string.IsNullOrWhiteSpace(host) ? GetDefaultHostName() : host;
+            if (resolvedHost != null) { props.Add(new LogEventProperty("host", new ScalarValue(resolvedHost))); }
             if (tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", tags)))); }
             _props = props;
             _maxMessageSize = maxMessageSize;
@@ -47,8 +49,37 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter.Format(logEvent, payloadWriter);
             var rawPayload = payloadWriter.ToString();
 
+            // Allow an event-level "host" property to override the configured/default host
+            List<LogEventProperty> propsToUse = _props;
+            if (logEvent.Properties != null && logEvent.Properties.TryGetValue("host", out var hostProperty))
+            {
+                var hostOverride = TryConvertScalarToString(hostProperty);
+                if (!string.IsNullOrWhiteSpace(hostOverride))
+                {
+                    var cloned = new List<LogEventProperty>(_props.Count);
+                    var replaced = false;
+                    foreach (var p in _props)
+                    {
+                        if (string.Equals(p.Name, "host", StringComparison.Ordinal))
+                        {
+                            cloned.Add(new LogEventProperty("host", new ScalarValue(hostOverride)));
+                            replaced = true;
+                        }
+                        else
+                        {
+                            cloned.Add(p);
+                        }
+                    }
+                    if (!replaced)
+                    {
+                        cloned.Add(new LogEventProperty("host", new ScalarValue(hostOverride)));
+                    }
+                    propsToUse = cloned;
+                }
+            }
+
             return TruncateIfNeeded(rawPayload)
-                .Select(x => ToDDPayload(Encoding.UTF8.GetString(x)))
+                .Select(x => ToDDPayload(Encoding.UTF8.GetString(x), propsToUse))
                 .ToArray();
         }
 
@@ -90,6 +121,11 @@ namespace Serilog.Sinks.Datadog.Logs
 
         internal string ToDDPayload(string rawPayload)
         {
+            return ToDDPayload(rawPayload, _props);
+        }
+
+        internal string ToDDPayload(string rawPayload, IReadOnlyList<LogEventProperty> props)
+        {
             // Render the dd event - a private json structure with the user event in the `message` field and 
             // Datadog specific fields at the root level. The message field can accept any format. By default 
             // Serilog sink will emit json - but the user can change change this format. 
@@ -98,7 +134,7 @@ namespace Serilog.Sinks.Datadog.Logs
             var ddPayloadWriter = new System.IO.StringWriter(ddPayload);
 
             ddPayloadWriter.Write("{");
-            foreach (var prop in _props)
+            foreach (var prop in props)
             {
                 JsonValueFormatter.WriteQuotedJsonString(prop.Name, ddPayloadWriter);
                 ddPayloadWriter.Write(":");
@@ -112,6 +148,27 @@ namespace Serilog.Sinks.Datadog.Logs
             ddPayloadWriter.Write("}");
 
             return ddPayloadWriter.ToString();
+        }
+
+        private static string GetDefaultHostName()
+        {
+#if NETSTANDARD1_0_OR_GREATER && !NETSTANDARD2_0_OR_GREATER
+            // Environment.MachineName is not available on netstandard1.x
+            var fromEnv = Environment.GetEnvironmentVariable("COMPUTERNAME")
+                ?? Environment.GetEnvironmentVariable("HOSTNAME");
+            return string.IsNullOrWhiteSpace(fromEnv) ? null : fromEnv;
+#else
+            return Environment.MachineName;
+#endif
+        }
+
+        private static string TryConvertScalarToString(LogEventPropertyValue value)
+        {
+            if (value is ScalarValue scalar && scalar.Value is string s)
+            {
+                return s;
+            }
+            return null;
         }
     }
 }
