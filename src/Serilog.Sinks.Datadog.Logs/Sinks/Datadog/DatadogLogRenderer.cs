@@ -3,6 +3,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
 
+using System;
 using Serilog.Events;
 using System.Collections.Generic;
 using System.Text;
@@ -24,12 +25,18 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter, int? ddPayloadSize = null)
         {
 
+            // Resolve values from environment variables when not provided
+            var resolvedSource = string.IsNullOrWhiteSpace(source) ? (GetEnv("DD_SOURCE") ?? CSHARP) : source;
+            var resolvedService = string.IsNullOrWhiteSpace(service) ? GetEnv("DD_SERVICE") : service;
+            var resolvedHost = string.IsNullOrWhiteSpace(host) ? (GetEnv("DD_HOST") ?? GetDefaultHostName()) : host;
+            var resolvedTags = MergeWithDatadogEnvTags(tags);
+
             var props = new List<LogEventProperty> {
-                new LogEventProperty("ddsource", new ScalarValue(source ?? CSHARP)),
+                new LogEventProperty("ddsource", new ScalarValue(resolvedSource)),
             };
-            if (service != null) { props.Add(new LogEventProperty("service", new ScalarValue(service))); }
-            if (host != null) { props.Add(new LogEventProperty("host", new ScalarValue(host))); }
-            if (tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", tags)))); }
+            if (resolvedService != null) { props.Add(new LogEventProperty("service", new ScalarValue(resolvedService))); }
+            if (resolvedHost != null) { props.Add(new LogEventProperty("host", new ScalarValue(resolvedHost))); }
+            if (resolvedTags != null && resolvedTags.Length > 0) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", resolvedTags)))); }
             _props = props;
             _maxMessageSize = maxMessageSize;
             _formatter = formatter;
@@ -47,8 +54,37 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter.Format(logEvent, payloadWriter);
             var rawPayload = payloadWriter.ToString();
 
+            // Allow an event-level "host" property to override the configured/default host
+            List<LogEventProperty> propsToUse = _props;
+            if (logEvent.Properties != null && logEvent.Properties.TryGetValue("host", out var hostProperty))
+            {
+                var hostOverride = TryConvertScalarToString(hostProperty);
+                if (!string.IsNullOrWhiteSpace(hostOverride))
+                {
+                    var cloned = new List<LogEventProperty>(_props.Count);
+                    var replaced = false;
+                    foreach (var p in _props)
+                    {
+                        if (string.Equals(p.Name, "host", StringComparison.Ordinal))
+                        {
+                            cloned.Add(new LogEventProperty("host", new ScalarValue(hostOverride)));
+                            replaced = true;
+                        }
+                        else
+                        {
+                            cloned.Add(p);
+                        }
+                    }
+                    if (!replaced)
+                    {
+                        cloned.Add(new LogEventProperty("host", new ScalarValue(hostOverride)));
+                    }
+                    propsToUse = cloned;
+                }
+            }
+
             return TruncateIfNeeded(rawPayload)
-                .Select(x => ToDDPayload(Encoding.UTF8.GetString(x)))
+                .Select(x => ToDDPayload(Encoding.UTF8.GetString(x), propsToUse))
                 .ToArray();
         }
 
@@ -90,6 +126,11 @@ namespace Serilog.Sinks.Datadog.Logs
 
         internal string ToDDPayload(string rawPayload)
         {
+            return ToDDPayload(rawPayload, _props);
+        }
+
+        internal string ToDDPayload(string rawPayload, IReadOnlyList<LogEventProperty> props)
+        {
             // Render the dd event - a private json structure with the user event in the `message` field and 
             // Datadog specific fields at the root level. The message field can accept any format. By default 
             // Serilog sink will emit json - but the user can change change this format. 
@@ -98,7 +139,7 @@ namespace Serilog.Sinks.Datadog.Logs
             var ddPayloadWriter = new System.IO.StringWriter(ddPayload);
 
             ddPayloadWriter.Write("{");
-            foreach (var prop in _props)
+            foreach (var prop in props)
             {
                 JsonValueFormatter.WriteQuotedJsonString(prop.Name, ddPayloadWriter);
                 ddPayloadWriter.Write(":");
@@ -112,6 +153,91 @@ namespace Serilog.Sinks.Datadog.Logs
             ddPayloadWriter.Write("}");
 
             return ddPayloadWriter.ToString();
+        }
+
+        private static string GetDefaultHostName()
+        {
+#if NETSTANDARD1_0_OR_GREATER && !NETSTANDARD2_0_OR_GREATER
+            // Environment.MachineName is not available on netstandard1.x
+            var fromEnv = Environment.GetEnvironmentVariable("COMPUTERNAME")
+                ?? Environment.GetEnvironmentVariable("HOSTNAME");
+            return string.IsNullOrWhiteSpace(fromEnv) ? null : fromEnv;
+#else
+            return Environment.MachineName;
+#endif
+        }
+
+        private static string TryConvertScalarToString(LogEventPropertyValue value)
+        {
+            if (value is ScalarValue scalar && scalar.Value is string s)
+            {
+                return s;
+            }
+            return null;
+        }
+
+        private static string GetEnv(string name)
+        {
+            try
+            {
+                return Environment.GetEnvironmentVariable(name);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string[] MergeWithDatadogEnvTags(string[] originalTags)
+        {
+            var result = new List<string>();
+            if (originalTags != null)
+            {
+                foreach (var t in originalTags)
+                {
+                    var trimmed = (t ?? "").Trim();
+                    if (!string.IsNullOrEmpty(trimmed) && !result.Contains(trimmed))
+                    {
+                        result.Add(trimmed);
+                    }
+                }
+            }
+
+            var ddTags = GetEnv("DD_TAGS");
+            if (!string.IsNullOrWhiteSpace(ddTags))
+            {
+                var parts = ddTags.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var p in parts)
+                {
+                    var trimmed = p.Trim();
+                    if (!string.IsNullOrEmpty(trimmed) && !result.Contains(trimmed))
+                    {
+                        result.Add(trimmed);
+                    }
+                }
+            }
+
+            var ddEnv = GetEnv("DD_ENV");
+            if (!string.IsNullOrWhiteSpace(ddEnv))
+            {
+                var envTag = $"env:{ddEnv}";
+                if (!result.Contains(envTag))
+                {
+                    result.Add(envTag);
+                }
+            }
+
+            var ddVersion = GetEnv("DD_VERSION");
+            if (!string.IsNullOrWhiteSpace(ddVersion))
+            {
+                var versionTag = $"version:{ddVersion}";
+                if (!result.Contains(versionTag))
+                {
+                    result.Add(versionTag);
+                }
+            }
+
+            return result.ToArray();
         }
     }
 }
