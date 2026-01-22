@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1
+
+* Default `host` to machine name when sink `Host` option is unset; on `netstandard1.x`, fall back to `COMPUTERNAME`/`HOSTNAME` environment variables.
+* Allow an event-level `"host"` property to override the configured/default host for that event only.
+* Add unit tests covering defaulting, explicit host, and per-event override behavior.
+
 ## 0.6.0
 
 * Expose JsonValueFormatter to allow for custom modification of log fields
