@@ -21,15 +21,21 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly ITextFormatter _formatter;
         private readonly byte[] _truncatedFlag = Encoding.UTF8.GetBytes("...TRUNCATED...");
         private readonly int _ddPayloadSize;
+        private readonly bool _resolveHostIfMissing;
 
-        public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter, int? ddPayloadSize = null)
+        public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter, int? ddPayloadSize = null, bool resolveHostIfMissing = false)
         {
 
             var props = new List<LogEventProperty> {
                 new LogEventProperty("ddsource", new ScalarValue(source ?? CSHARP)),
             };
             if (service != null) { props.Add(new LogEventProperty("service", new ScalarValue(service))); }
-            var resolvedHost = string.IsNullOrWhiteSpace(host) ? GetDefaultHostName() : host;
+            _resolveHostIfMissing = resolveHostIfMissing;
+            string resolvedHost = host;
+            if (string.IsNullOrWhiteSpace(resolvedHost) && _resolveHostIfMissing)
+            {
+                resolvedHost = GetDefaultHostName();
+            }
             if (resolvedHost != null) { props.Add(new LogEventProperty("host", new ScalarValue(resolvedHost))); }
             if (tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", tags)))); }
             _props = props;
@@ -154,11 +160,25 @@ namespace Serilog.Sinks.Datadog.Logs
         {
 #if NETSTANDARD1_0_OR_GREATER && !NETSTANDARD2_0_OR_GREATER
             // Environment.MachineName is not available on netstandard1.x
-            var fromEnv = Environment.GetEnvironmentVariable("COMPUTERNAME")
-                ?? Environment.GetEnvironmentVariable("HOSTNAME");
-            return string.IsNullOrWhiteSpace(fromEnv) ? null : fromEnv;
+            try
+            {
+                var fromEnv = Environment.GetEnvironmentVariable("COMPUTERNAME")
+                    ?? Environment.GetEnvironmentVariable("HOSTNAME");
+                return string.IsNullOrWhiteSpace(fromEnv) ? null : fromEnv;
+            }
+            catch
+            {
+                return null;
+            }
 #else
-            return Environment.MachineName;
+            try
+            {
+                return Environment.MachineName;
+            }
+            catch
+            {
+                return null;
+            }
 #endif
         }
 

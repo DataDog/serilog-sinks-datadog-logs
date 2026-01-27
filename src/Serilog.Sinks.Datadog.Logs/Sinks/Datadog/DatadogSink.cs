@@ -59,7 +59,8 @@ namespace Serilog.Sinks.Datadog.Logs
             IDatadogClient client = null, ITextFormatter formatter = null, int? maxMessageSize = null, JsonValueFormatter jsonValueFormatter = null)
         {
             formatter = formatter ?? new DatadogJsonFormatter(jsonValueFormatter);
-            var enricher = new DatadogLogRenderer(source, service, host, tags, maxMessageSize ?? DefaultMaxMessageSize, formatter);
+            var resolveHostIfMissing = GetResolveHostIfMissing(config);
+            var enricher = new DatadogLogRenderer(source, service, host, tags, maxMessageSize ?? DefaultMaxMessageSize, formatter, null, resolveHostIfMissing);
             _client = client ??
                       CreateDatadogClient(apiKey, enricher, config, detectTCPDisconnection);
             _exceptionHandler = exceptionHandler;
@@ -178,6 +179,26 @@ namespace Serilog.Sinks.Datadog.Logs
             _exceptionHandler?.Invoke(e);
 
             SelfLog.WriteLine("{0}", e.Message);
+        }
+
+        private static bool GetResolveHostIfMissing(DatadogConfiguration config)
+        {
+            // config flag has priority; env can enable as well
+            if (config != null && config.ResolveHostIfMissing)
+            {
+                return true;
+            }
+            try
+            {
+                var v = System.Environment.GetEnvironmentVariable("DD_LOGS_SINK_RESOLVE_HOST");
+                if (string.IsNullOrWhiteSpace(v)) return false;
+                v = v.Trim().ToLowerInvariant();
+                return v == "1" || v == "true" || v == "yes" || v == "on";
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

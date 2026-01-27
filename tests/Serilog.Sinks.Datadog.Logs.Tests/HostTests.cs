@@ -12,7 +12,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         public void UnsetHostDefaultsToEnvironmentMachineName()
         {
             const string apiKey = "NOT_AN_API_KEY";
-            var renderer = new DatadogLogRenderer("TEST", "TEST", null, new[] { "tag1" }, 256 * 1000, new DatadogJsonFormatter());
+            var renderer = new DatadogLogRenderer("TEST", "TEST", null, new[] { "tag1" }, 256 * 1000, new DatadogJsonFormatter(), resolveHostIfMissing: true);
             var noop = new NoopClient(apiKey, renderer);
 
             using (var log = new LoggerConfiguration().WriteTo.DatadogLogs(apiKey, client: noop).CreateLogger())

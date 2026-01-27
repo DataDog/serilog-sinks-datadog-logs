@@ -11,6 +11,11 @@ namespace Serilog.Sinks.Datadog.Logs
     public class DatadogConfiguration
     {
         /// <summary>
+        /// When true, if the sink-level Host option is unset, resolve and include a default host value.
+        /// </summary>
+        public bool ResolveHostIfMissing { get; set; }
+
+        /// <summary>
         /// The Datadog logs-backend URL.
         /// </summary>
         public const string DDUrl = "https://http-intake.logs.datadoghq.com";
