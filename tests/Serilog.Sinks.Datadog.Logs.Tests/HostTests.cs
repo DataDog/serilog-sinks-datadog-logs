@@ -42,7 +42,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         }
 
         [Test]
-        public void EventHostPropertyOverridesConfiguredHost()
+        public void EventHostPropertyDoesNotOverrideConfiguredHost()
         {
             const string apiKey = "NOT_AN_API_KEY";
             var configuredHost = "base-host";
@@ -56,8 +56,8 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             }
 
             var payload = noop.SentPayloads[0];
-            StringAssert.Contains("\"host\":\"" + eventHost + "\"", payload);
-            StringAssert.DoesNotContain("\"host\":\"" + configuredHost + "\"", payload);
+            StringAssert.Contains("\"host\":\"" + configuredHost + "\"", payload);
+            StringAssert.DoesNotContain("\"host\":\"" + eventHost + "\"", payload);
         }
 
         [Test]
@@ -95,7 +95,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         }
 
         [Test]
-        public void HostOverrideAppliesOnlyToThatEvent()
+        public void HostOverrideDoesNotApply()
         {
             const string apiKey = "NOT_AN_API_KEY";
             var configuredHost = "configured-host";
@@ -113,15 +113,15 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             var first = noop.SentPayloads[0];
             var second = noop.SentPayloads[1];
 
-            StringAssert.Contains("\"host\":\"" + overrideHost + "\"", first);
-            StringAssert.DoesNotContain("\"host\":\"" + configuredHost + "\"", first);
+            StringAssert.Contains("\"host\":\"" + configuredHost + "\"", first);
+            StringAssert.DoesNotContain("\"host\":\"" + overrideHost + "\"", first);
 
             StringAssert.Contains("\"host\":\"" + configuredHost + "\"", second);
             StringAssert.DoesNotContain("\"host\":\"" + overrideHost + "\"", second);
         }
 
         [Test]
-        public void ServiceAndTagsPreservedWhenOverridingHost()
+        public void ServiceAndTagsPreservedWhenEventHostProvided()
         {
             const string apiKey = "NOT_AN_API_KEY";
             var configuredHost = "configured-host";
@@ -135,7 +135,7 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             }
 
             var payload = noop.SentPayloads[0];
-            StringAssert.Contains("\"host\":\"" + overrideHost + "\"", payload);
+            StringAssert.Contains("\"host\":\"" + configuredHost + "\"", payload);
             StringAssert.Contains("\"service\":\"TEST-SVC\"", payload);
             StringAssert.Contains("\"ddtags\":\"a:1,b:2\"", payload);
             StringAssert.Contains("\"ddsource\":\"TEST-SRC\"", payload);

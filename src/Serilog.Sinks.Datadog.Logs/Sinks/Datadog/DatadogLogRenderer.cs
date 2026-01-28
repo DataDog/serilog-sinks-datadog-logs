@@ -55,34 +55,7 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter.Format(logEvent, payloadWriter);
             var rawPayload = payloadWriter.ToString();
 
-            // Allow an event-level "host" property to override the configured/default host
             List<LogEventProperty> propsToUse = _props;
-            if (logEvent.Properties != null && logEvent.Properties.TryGetValue("host", out var hostProperty))
-            {
-                var hostOverride = TryConvertScalarToString(hostProperty);
-                if (!string.IsNullOrWhiteSpace(hostOverride))
-                {
-                    var cloned = new List<LogEventProperty>(_props.Count);
-                    var replaced = false;
-                    foreach (var p in _props)
-                    {
-                        if (string.Equals(p.Name, "host", StringComparison.Ordinal))
-                        {
-                            cloned.Add(new LogEventProperty("host", new ScalarValue(hostOverride)));
-                            replaced = true;
-                        }
-                        else
-                        {
-                            cloned.Add(p);
-                        }
-                    }
-                    if (!replaced)
-                    {
-                        cloned.Add(new LogEventProperty("host", new ScalarValue(hostOverride)));
-                    }
-                    propsToUse = cloned;
-                }
-            }
 
             return TruncateIfNeeded(rawPayload)
                 .Select(x => ToDDPayload(Encoding.UTF8.GetString(x), propsToUse))
