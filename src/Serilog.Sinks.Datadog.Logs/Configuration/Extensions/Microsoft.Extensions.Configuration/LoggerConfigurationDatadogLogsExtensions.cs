@@ -1,10 +1,11 @@
 ﻿// Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2019 Datadog, Inc.
+// Copyright 2026 Datadog, Inc.
 
 using Microsoft.Extensions.Configuration;
 using Serilog.Configuration;
+using Serilog.Core;
 using Serilog.Events;
 using Serilog.Formatting;
 using Serilog.Sinks.Datadog.Logs;
@@ -44,6 +45,7 @@ namespace Serilog
         /// <param name="formatter">A formatter implementation to change the format of the logs.</param>
         /// <param name="maxMessageSize">The maximum size in bytes of a message before it is split into chunks</param>
         /// <param name="jsonValueFormatter">Optional override of the default Serilog JsonValueFormatter.</param>
+        /// <param name="levelSwitch">Optional level switch to control this sink's minimum level at runtime.</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
@@ -65,7 +67,8 @@ namespace Serilog
             IDatadogClient client = null,
             ITextFormatter formatter = null,
             int? maxMessageSize = null,
-            JsonValueFormatter jsonValueFormatter = null)
+            JsonValueFormatter jsonValueFormatter = null,
+            LoggingLevelSwitch levelSwitch = null)
         {
             if (loggerConfiguration == null)
             {
@@ -81,7 +84,7 @@ namespace Serilog
 
             // Use restrictedToMinimumLevel if set, otherwise use logLevel
             var effectiveLevel = restrictedToMinimumLevel != LevelAlias.Minimum ? restrictedToMinimumLevel : logLevel;
-            return loggerConfiguration.Sink(sink, effectiveLevel);
+            return loggerConfiguration.Sink(sink, effectiveLevel, levelSwitch);
         }
     }
 }
