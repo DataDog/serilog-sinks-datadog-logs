@@ -1,7 +1,7 @@
 // Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2019 Datadog, Inc.
+// Copyright 2026 Datadog, Inc.
 
 using System;
 using Serilog.Events;
@@ -28,7 +28,7 @@ namespace Serilog.Sinks.Datadog.Logs
             // Resolve values from environment variables when not provided
             var resolvedSource = string.IsNullOrWhiteSpace(source) ? (GetEnv("DD_SOURCE") ?? CSHARP) : source;
             var resolvedService = string.IsNullOrWhiteSpace(service) ? GetEnv("DD_SERVICE") : service;
-            var resolvedHost = string.IsNullOrWhiteSpace(host) ? (GetEnv("DD_HOST") ?? GetDefaultHostName()) : host;
+            var resolvedHost = string.IsNullOrWhiteSpace(host) ? GetEnv("DD_HOST") : host;
             var resolvedTags = MergeWithDatadogEnvTags(tags);
 
             var props = new List<LogEventProperty> {
@@ -155,18 +155,6 @@ namespace Serilog.Sinks.Datadog.Logs
             return ddPayloadWriter.ToString();
         }
 
-        private static string GetDefaultHostName()
-        {
-#if NETSTANDARD1_0_OR_GREATER && !NETSTANDARD2_0_OR_GREATER
-            // Environment.MachineName is not available on netstandard1.x
-            var fromEnv = Environment.GetEnvironmentVariable("COMPUTERNAME")
-                ?? Environment.GetEnvironmentVariable("HOSTNAME");
-            return string.IsNullOrWhiteSpace(fromEnv) ? null : fromEnv;
-#else
-            return Environment.MachineName;
-#endif
-        }
-
         private static string TryConvertScalarToString(LogEventPropertyValue value)
         {
             if (value is ScalarValue scalar && scalar.Value is string s)
@@ -191,12 +179,13 @@ namespace Serilog.Sinks.Datadog.Logs
         private static string[] MergeWithDatadogEnvTags(string[] originalTags)
         {
             var result = new List<string>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
             if (originalTags != null)
             {
                 foreach (var t in originalTags)
                 {
                     var trimmed = (t ?? "").Trim();
-                    if (!string.IsNullOrEmpty(trimmed) && !result.Contains(trimmed))
+                    if (!string.IsNullOrEmpty(trimmed) && seen.Add(trimmed))
                     {
                         result.Add(trimmed);
                     }
@@ -210,7 +199,7 @@ namespace Serilog.Sinks.Datadog.Logs
                 foreach (var p in parts)
                 {
                     var trimmed = p.Trim();
-                    if (!string.IsNullOrEmpty(trimmed) && !result.Contains(trimmed))
+                    if (!string.IsNullOrEmpty(trimmed) && seen.Add(trimmed))
                     {
                         result.Add(trimmed);
                     }
@@ -221,7 +210,7 @@ namespace Serilog.Sinks.Datadog.Logs
             if (!string.IsNullOrWhiteSpace(ddEnv))
             {
                 var envTag = $"env:{ddEnv}";
-                if (!result.Contains(envTag))
+                if (seen.Add(envTag))
                 {
                     result.Add(envTag);
                 }
@@ -231,7 +220,7 @@ namespace Serilog.Sinks.Datadog.Logs
             if (!string.IsNullOrWhiteSpace(ddVersion))
             {
                 var versionTag = $"version:{ddVersion}";
-                if (!result.Contains(versionTag))
+                if (seen.Add(versionTag))
                 {
                     result.Add(versionTag);
                 }
