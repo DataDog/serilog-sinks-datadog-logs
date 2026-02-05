@@ -1,8 +1,9 @@
 // Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2019 Datadog, Inc.
+// Copyright 2026 Datadog, Inc.
 
+using System;
 using Serilog.Events;
 using System.Collections.Generic;
 using System.Text;
@@ -21,14 +22,19 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly byte[] _truncatedFlag = Encoding.UTF8.GetBytes("...TRUNCATED...");
         private readonly int _ddPayloadSize;
 
-        public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter, int? ddPayloadSize = null)
+        public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter, int? ddPayloadSize = null, bool resolveHostIfMissing = false)
         {
 
             var props = new List<LogEventProperty> {
                 new LogEventProperty("ddsource", new ScalarValue(source ?? CSHARP)),
             };
             if (service != null) { props.Add(new LogEventProperty("service", new ScalarValue(service))); }
-            if (host != null) { props.Add(new LogEventProperty("host", new ScalarValue(host))); }
+            string resolvedHost = host;
+            if (string.IsNullOrWhiteSpace(resolvedHost) && resolveHostIfMissing)
+            {
+                resolvedHost = GetDefaultHostName();
+            }
+            if (resolvedHost != null) { props.Add(new LogEventProperty("host", new ScalarValue(resolvedHost))); }
             if (tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", tags)))); }
             _props = props;
             _maxMessageSize = maxMessageSize;
@@ -90,6 +96,11 @@ namespace Serilog.Sinks.Datadog.Logs
 
         internal string ToDDPayload(string rawPayload)
         {
+            return ToDDPayload(rawPayload, _props);
+        }
+
+        internal string ToDDPayload(string rawPayload, IReadOnlyList<LogEventProperty> props)
+        {
             // Render the dd event - a private json structure with the user event in the `message` field and 
             // Datadog specific fields at the root level. The message field can accept any format. By default 
             // Serilog sink will emit json - but the user can change change this format. 
@@ -98,7 +109,7 @@ namespace Serilog.Sinks.Datadog.Logs
             var ddPayloadWriter = new System.IO.StringWriter(ddPayload);
 
             ddPayloadWriter.Write("{");
-            foreach (var prop in _props)
+            foreach (var prop in props)
             {
                 JsonValueFormatter.WriteQuotedJsonString(prop.Name, ddPayloadWriter);
                 ddPayloadWriter.Write(":");
@@ -112,6 +123,32 @@ namespace Serilog.Sinks.Datadog.Logs
             ddPayloadWriter.Write("}");
 
             return ddPayloadWriter.ToString();
+        }
+
+        private static string GetDefaultHostName()
+        {
+#if NETSTANDARD1_0_OR_GREATER && !NETSTANDARD2_0_OR_GREATER
+            // Environment.MachineName is not available on netstandard1.x
+            try
+            {
+                var fromEnv = Environment.GetEnvironmentVariable("COMPUTERNAME")
+                    ?? Environment.GetEnvironmentVariable("HOSTNAME");
+                return string.IsNullOrWhiteSpace(fromEnv) ? null : fromEnv;
+            }
+            catch
+            {
+                return null;
+            }
+#else
+            try
+            {
+                return Environment.MachineName;
+            }
+            catch
+            {
+                return null;
+            }
+#endif
         }
     }
 }
