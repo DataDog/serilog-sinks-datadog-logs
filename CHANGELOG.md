@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1
+
+* Add `DatadogConfiguration.ResolveHostIfMissing` (and env `DD_LOGS_SINK_RESOLVE_HOST`) to provide a default `host` value when the sink `Host` option is unset. Uses `Environment.MachineName` if available, will fallback to `COMPUTERNAME`/`HOSTNAME` on `netstandard1.x`
+
 ## 0.6.0
 
 * Expose JsonValueFormatter to allow for custom modification of log fields
