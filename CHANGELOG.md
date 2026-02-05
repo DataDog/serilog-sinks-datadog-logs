@@ -2,8 +2,8 @@
 
 ## 0.6.1
 
-* Default `host` to machine name when sink `Host` option is unset; on `netstandard1.x`, fall back to `COMPUTERNAME`/`HOSTNAME` environment variables.
-* Always use the configured/default host for events; event-level `"host"` property is ignored.
+* Add `DatadogConfiguration.ResolveHostIfMissing` (and env `DD_LOGS_SINK_RESOLVE_HOST`) to default `host` when the sink `Host` option is unset. Uses `Environment.MachineName`; on `netstandard1.x`, falls back to `COMPUTERNAME`/`HOSTNAME`.
+* Clarify behavior (no change): the top-level `host` is always the configured/default host; event-level `"host"` properties do not override it.
 * Add unit tests covering defaulting and explicit host behavior.
 
 ## 0.6.0

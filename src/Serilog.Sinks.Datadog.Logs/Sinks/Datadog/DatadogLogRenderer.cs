@@ -21,7 +21,6 @@ namespace Serilog.Sinks.Datadog.Logs
         private readonly ITextFormatter _formatter;
         private readonly byte[] _truncatedFlag = Encoding.UTF8.GetBytes("...TRUNCATED...");
         private readonly int _ddPayloadSize;
-        private readonly bool _resolveHostIfMissing;
 
         public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter, int? ddPayloadSize = null, bool resolveHostIfMissing = false)
         {
@@ -30,9 +29,8 @@ namespace Serilog.Sinks.Datadog.Logs
                 new LogEventProperty("ddsource", new ScalarValue(source ?? CSHARP)),
             };
             if (service != null) { props.Add(new LogEventProperty("service", new ScalarValue(service))); }
-            _resolveHostIfMissing = resolveHostIfMissing;
             string resolvedHost = host;
-            if (string.IsNullOrWhiteSpace(resolvedHost) && _resolveHostIfMissing)
+            if (string.IsNullOrWhiteSpace(resolvedHost) && resolveHostIfMissing)
             {
                 resolvedHost = GetDefaultHostName();
             }
@@ -55,10 +53,8 @@ namespace Serilog.Sinks.Datadog.Logs
             _formatter.Format(logEvent, payloadWriter);
             var rawPayload = payloadWriter.ToString();
 
-            List<LogEventProperty> propsToUse = _props;
-
             return TruncateIfNeeded(rawPayload)
-                .Select(x => ToDDPayload(Encoding.UTF8.GetString(x), propsToUse))
+                .Select(x => ToDDPayload(Encoding.UTF8.GetString(x)))
                 .ToArray();
         }
 
@@ -153,15 +149,6 @@ namespace Serilog.Sinks.Datadog.Logs
                 return null;
             }
 #endif
-        }
-
-        private static string TryConvertScalarToString(LogEventPropertyValue value)
-        {
-            if (value is ScalarValue scalar && scalar.Value is string s)
-            {
-                return s;
-            }
-            return null;
         }
     }
 }

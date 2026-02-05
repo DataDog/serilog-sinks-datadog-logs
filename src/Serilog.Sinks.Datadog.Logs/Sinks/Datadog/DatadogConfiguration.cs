@@ -58,13 +58,14 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {
         }
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false, int maxRetries = 10)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false, int maxRetries = 10, bool resolveHostIfMissing = false)
         {
             Url = url;
             Port = port;
             UseSSL = useSSL;
             UseTCP = useTCP;
             MaxRetries = maxRetries;
+            ResolveHostIfMissing = resolveHostIfMissing;
         }
 
         public override string ToString() => $"{{ Url: {Url}, Port: {Port}, UseSSL: {UseSSL}, UseTCP: {UseTCP} }}";
