@@ -137,7 +137,7 @@ If sink arguments are not provided, the sink can fall back to the standard Datad
 
 - `DD_SOURCE` → `ddsource` (defaults to `csharp` if not set)
 - `DD_SERVICE` → `service`
-- `DD_HOST` → `host` (if not set, falls back to machine name)
+- `DD_HOST` → `host`
 - `DD_TAGS`, `DD_ENV`, `DD_VERSION` → merged into `ddtags`
 
 Notes:
