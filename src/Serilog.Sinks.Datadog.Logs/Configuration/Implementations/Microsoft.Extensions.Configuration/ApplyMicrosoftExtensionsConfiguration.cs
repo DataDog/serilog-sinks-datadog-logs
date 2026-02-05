@@ -25,13 +25,16 @@ namespace Serilog.Sinks.Datadog.Logs
 
             var section = configurationSection.Get<DatadogConfiguration>();
 
-            return new DatadogConfiguration(
+            var result = new DatadogConfiguration(
                 url: datadogConfiguration?.Url ?? section.Url,
                 port: datadogConfiguration?.Port ?? section.Port,
                 useSSL: datadogConfiguration?.UseSSL ?? section.UseSSL,
                 useTCP: datadogConfiguration?.UseTCP ?? section.UseTCP,
-                maxRetries:datadogConfiguration?.MaxRetries ?? section.MaxRetries
+                maxRetries:datadogConfiguration?.MaxRetries ?? section.MaxRetries,
+                resolveHostIfMissing: datadogConfiguration?.ResolveHostIfMissing ?? section.ResolveHostIfMissing
             );
+
+            return result;
         }
     }
 }
