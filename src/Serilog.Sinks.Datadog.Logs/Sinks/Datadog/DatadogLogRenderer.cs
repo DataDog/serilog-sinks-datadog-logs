@@ -31,6 +31,15 @@ namespace Serilog.Sinks.Datadog.Logs
             var resolvedHost = string.IsNullOrWhiteSpace(host) ? GetEnv("DD_HOST") : host;
             var resolvedTags = MergeWithDatadogEnvTags(tags);
 
+            if (string.IsNullOrWhiteSpace(resolvedHost) && resolveHostIfMissing)
+            {
+                var machineName = GetMachineNameOrNull();
+                if (!string.IsNullOrWhiteSpace(machineName))
+                {
+                    resolvedHost = machineName;
+                }
+            }
+
             var props = new List<LogEventProperty> {
                 new LogEventProperty("ddsource", new ScalarValue(resolvedSource)),
             };
@@ -124,6 +133,28 @@ namespace Serilog.Sinks.Datadog.Logs
             ddPayloadWriter.Write("}");
 
             return ddPayloadWriter.ToString();
+        }
+
+        private static string GetMachineNameOrNull()
+        {
+#if NETSTANDARD1_3
+            // Environment.MachineName is not available on netstandard1.3
+            return GetEnv("COMPUTERNAME") ?? GetEnv("HOSTNAME");
+#else
+            try
+            {
+                var name = Environment.MachineName;
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    return name;
+                }
+            }
+            catch
+            {
+                // ignore and fallback to env vars
+            }
+            return GetEnv("COMPUTERNAME") ?? GetEnv("HOSTNAME");
+#endif
         }
 
         private static string GetEnv(string name)
