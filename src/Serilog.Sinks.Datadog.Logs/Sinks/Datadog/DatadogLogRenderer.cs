@@ -34,9 +34,9 @@ namespace Serilog.Sinks.Datadog.Logs
             var props = new List<LogEventProperty> {
                 new LogEventProperty("ddsource", new ScalarValue(resolvedSource)),
             };
-            if (service != null) { props.Add(new LogEventProperty("service", new ScalarValue(service))); }
-            if (host != null) { props.Add(new LogEventProperty("host", new ScalarValue(host))); }
-            if (tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", tags)))); }
+            if (resolvedService != null) { props.Add(new LogEventProperty("service", new ScalarValue(resolvedService))); }
+            if (resolvedHost != null) { props.Add(new LogEventProperty("host", new ScalarValue(resolvedHost))); }
+            if (resolvedTags != null && resolvedTags.Length > 0) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", resolvedTags)))); }
             _props = props;
             _maxMessageSize = maxMessageSize;
             _formatter = formatter;
@@ -124,6 +124,71 @@ namespace Serilog.Sinks.Datadog.Logs
             ddPayloadWriter.Write("}");
 
             return ddPayloadWriter.ToString();
+        }
+
+        private static string GetEnv(string name)
+        {
+            try
+            {
+                return Environment.GetEnvironmentVariable(name);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string[] MergeWithDatadogEnvTags(string[] originalTags)
+        {
+            var result = new List<string>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            if (originalTags != null)
+            {
+                foreach (var t in originalTags)
+                {
+                    var trimmed = (t ?? "").Trim();
+                    if (!string.IsNullOrEmpty(trimmed) && seen.Add(trimmed))
+                    {
+                        result.Add(trimmed);
+                    }
+                }
+            }
+
+            var ddTags = GetEnv("DD_TAGS");
+            if (!string.IsNullOrWhiteSpace(ddTags))
+            {
+                var parts = ddTags.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var p in parts)
+                {
+                    var trimmed = p.Trim();
+                    if (!string.IsNullOrEmpty(trimmed) && seen.Add(trimmed))
+                    {
+                        result.Add(trimmed);
+                    }
+                }
+            }
+
+            var ddEnv = GetEnv("DD_ENV");
+            if (!string.IsNullOrWhiteSpace(ddEnv))
+            {
+                var envTag = $"env:{ddEnv}";
+                if (seen.Add(envTag))
+                {
+                    result.Add(envTag);
+                }
+            }
+
+            var ddVersion = GetEnv("DD_VERSION");
+            if (!string.IsNullOrWhiteSpace(ddVersion))
+            {
+                var versionTag = $"version:{ddVersion}";
+                if (seen.Add(versionTag))
+                {
+                    result.Add(versionTag);
+                }
+            }
+
+            return result.ToArray();
         }
     }
 }
