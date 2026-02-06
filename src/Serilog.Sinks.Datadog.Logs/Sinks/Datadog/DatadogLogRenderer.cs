@@ -171,16 +171,15 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private static string[] MergeWithDatadogEnvTags(string[] originalTags)
         {
-            var result = new List<string>();
-            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var set = new HashSet<string>(StringComparer.Ordinal);
             if (originalTags != null)
             {
                 foreach (var t in originalTags)
                 {
                     var trimmed = (t ?? "").Trim();
-                    if (!string.IsNullOrEmpty(trimmed) && seen.Add(trimmed))
+                    if (!string.IsNullOrEmpty(trimmed))
                     {
-                        result.Add(trimmed);
+                        set.Add(trimmed);
                     }
                 }
             }
@@ -192,9 +191,9 @@ namespace Serilog.Sinks.Datadog.Logs
                 foreach (var p in parts)
                 {
                     var trimmed = p.Trim();
-                    if (!string.IsNullOrEmpty(trimmed) && seen.Add(trimmed))
+                    if (!string.IsNullOrEmpty(trimmed))
                     {
-                        result.Add(trimmed);
+                        set.Add(trimmed);
                     }
                 }
             }
@@ -202,24 +201,16 @@ namespace Serilog.Sinks.Datadog.Logs
             var ddEnv = GetEnv("DD_ENV");
             if (!string.IsNullOrWhiteSpace(ddEnv))
             {
-                var envTag = $"env:{ddEnv}";
-                if (seen.Add(envTag))
-                {
-                    result.Add(envTag);
-                }
+                set.Add($"env:{ddEnv}");
             }
 
             var ddVersion = GetEnv("DD_VERSION");
             if (!string.IsNullOrWhiteSpace(ddVersion))
             {
-                var versionTag = $"version:{ddVersion}";
-                if (seen.Add(versionTag))
-                {
-                    result.Add(versionTag);
-                }
+                set.Add($"version:{ddVersion}");
             }
 
-            return result.ToArray();
+            return set.ToArray();
         }
     }
 }
