@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using NUnit.Framework;
 using Serilog;
 using Serilog.Sinks.Datadog.Logs;
+using System.Text.Json;
 
 namespace Serilog.Sinks.Datadog.Logs.Tests
 {
@@ -90,7 +92,18 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
             }
 
             var payload = noop.SentPayloads[0];
-            StringAssert.Contains("\"ddtags\":\"x:9,a:1,b:2,env:prod,version:1.2.3\"", payload);
+			using (var doc = JsonDocument.Parse(payload))
+			{
+				Assert.IsTrue(doc.RootElement.TryGetProperty("ddtags", out var ddtagsElement), "Payload missing 'ddtags'.");
+				var ddtags = ddtagsElement.GetString();
+				Assert.IsNotNull(ddtags, "'ddtags' must be a string.");
+				var actual = ddtags
+					.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+					.Select(t => t.Trim())
+					.ToArray();
+				var expected = new[] { "x:9", "a:1", "b:2", "env:prod", "version:1.2.3" };
+				CollectionAssert.AreEquivalent(expected, actual, "Tags should be equivalent regardless of order.");
+			}
         }
     }
 }

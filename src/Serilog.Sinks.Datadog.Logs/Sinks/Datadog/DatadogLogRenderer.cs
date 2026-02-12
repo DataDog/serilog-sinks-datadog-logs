@@ -26,7 +26,7 @@ namespace Serilog.Sinks.Datadog.Logs
         {
 
             // Resolve values from environment variables when not provided
-            var resolvedSource = string.IsNullOrWhiteSpace(source) ? (GetEnv("DD_SOURCE") ?? CSHARP) : source;
+			var resolvedSource = source ?? (GetEnv("DD_SOURCE") ?? CSHARP);
             var resolvedService = string.IsNullOrWhiteSpace(service) ? GetEnv("DD_SERVICE") : service;
             var resolvedHost = string.IsNullOrWhiteSpace(host) ? GetEnv("DD_HOST") : host;
             var resolvedTags = MergeWithDatadogEnvTags(tags);
@@ -137,8 +137,8 @@ namespace Serilog.Sinks.Datadog.Logs
 
         private static string GetMachineNameOrNull()
         {
-#if NETSTANDARD1_3
-            // Environment.MachineName is not available on netstandard1.3
+#if NETSTANDARD1_0_OR_GREATER && !NETSTANDARD2_0_OR_GREATER
+			// Environment.MachineName is not available on netstandard1.x
             return GetEnv("COMPUTERNAME") ?? GetEnv("HOSTNAME");
 #else
             try
