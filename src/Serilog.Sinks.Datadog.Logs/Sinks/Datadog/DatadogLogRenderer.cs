@@ -25,17 +25,27 @@ namespace Serilog.Sinks.Datadog.Logs
         public DatadogLogRenderer(string source, string service, string host, string[] tags, int maxMessageSize, ITextFormatter formatter, int? ddPayloadSize = null, bool resolveHostIfMissing = false)
         {
 
-            var props = new List<LogEventProperty> {
-                new LogEventProperty("ddsource", new ScalarValue(source ?? CSHARP)),
-            };
-            if (service != null) { props.Add(new LogEventProperty("service", new ScalarValue(service))); }
-            string resolvedHost = host;
+            // Resolve values from environment variables when not provided
+			var resolvedSource = source ?? (GetEnv("DD_SOURCE") ?? CSHARP);
+            var resolvedService = string.IsNullOrWhiteSpace(service) ? GetEnv("DD_SERVICE") : service;
+            var resolvedHost = string.IsNullOrWhiteSpace(host) ? GetEnv("DD_HOST") : host;
+            var resolvedTags = MergeWithDatadogEnvTags(tags);
+
             if (string.IsNullOrWhiteSpace(resolvedHost) && resolveHostIfMissing)
             {
-                resolvedHost = GetDefaultHostName();
+                var machineName = GetMachineNameOrNull();
+                if (!string.IsNullOrWhiteSpace(machineName))
+                {
+                    resolvedHost = machineName;
+                }
             }
+
+            var props = new List<LogEventProperty> {
+                new LogEventProperty("ddsource", new ScalarValue(resolvedSource)),
+            };
+            if (resolvedService != null) { props.Add(new LogEventProperty("service", new ScalarValue(resolvedService))); }
             if (resolvedHost != null) { props.Add(new LogEventProperty("host", new ScalarValue(resolvedHost))); }
-            if (tags != null) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", tags)))); }
+            if (resolvedTags != null && resolvedTags.Length > 0) { props.Add(new LogEventProperty("ddtags", new ScalarValue(string.Join(",", resolvedTags)))); }
             _props = props;
             _maxMessageSize = maxMessageSize;
             _formatter = formatter;
@@ -125,30 +135,82 @@ namespace Serilog.Sinks.Datadog.Logs
             return ddPayloadWriter.ToString();
         }
 
-        private static string GetDefaultHostName()
+        private static string GetMachineNameOrNull()
         {
 #if NETSTANDARD1_0_OR_GREATER && !NETSTANDARD2_0_OR_GREATER
-            // Environment.MachineName is not available on netstandard1.x
-            try
-            {
-                var fromEnv = Environment.GetEnvironmentVariable("COMPUTERNAME")
-                    ?? Environment.GetEnvironmentVariable("HOSTNAME");
-                return string.IsNullOrWhiteSpace(fromEnv) ? null : fromEnv;
-            }
-            catch
-            {
-                return null;
-            }
+			// Environment.MachineName is not available on netstandard1.x
+            return GetEnv("COMPUTERNAME") ?? GetEnv("HOSTNAME");
 #else
             try
             {
-                return Environment.MachineName;
+                var name = Environment.MachineName;
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    return name;
+                }
+            }
+            catch
+            {
+                // ignore and fallback to env vars
+            }
+            return GetEnv("COMPUTERNAME") ?? GetEnv("HOSTNAME");
+#endif
+        }
+
+        private static string GetEnv(string name)
+        {
+            try
+            {
+                return Environment.GetEnvironmentVariable(name);
             }
             catch
             {
                 return null;
             }
-#endif
+        }
+
+        private static string[] MergeWithDatadogEnvTags(string[] originalTags)
+        {
+            var set = new HashSet<string>(StringComparer.Ordinal);
+            if (originalTags != null)
+            {
+                foreach (var t in originalTags)
+                {
+                    var trimmed = (t ?? "").Trim();
+                    if (!string.IsNullOrEmpty(trimmed))
+                    {
+                        set.Add(trimmed);
+                    }
+                }
+            }
+
+            var ddTags = GetEnv("DD_TAGS");
+            if (!string.IsNullOrWhiteSpace(ddTags))
+            {
+                var parts = ddTags.Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var p in parts)
+                {
+                    var trimmed = p.Trim();
+                    if (!string.IsNullOrEmpty(trimmed))
+                    {
+                        set.Add(trimmed);
+                    }
+                }
+            }
+
+            var ddEnv = GetEnv("DD_ENV");
+            if (!string.IsNullOrWhiteSpace(ddEnv))
+            {
+                set.Add($"env:{ddEnv}");
+            }
+
+            var ddVersion = GetEnv("DD_VERSION");
+            if (!string.IsNullOrWhiteSpace(ddVersion))
+            {
+                set.Add($"version:{ddVersion}");
+            }
+
+            return set.ToArray();
         }
     }
 }

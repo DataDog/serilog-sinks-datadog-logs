@@ -131,6 +131,40 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
 
 **NOTE:** the `configuration` section is optional so that you may override the defaults. 
 
+## Using Datadog DD_ environment variables
+
+If sink arguments are not provided, the sink can fall back to the standard Datadog environment variables:
+
+- `DD_SOURCE` → `ddsource` (defaults to `csharp` if not set)
+- `DD_SERVICE` → `service`
+- `DD_HOST` → `host`
+- `DD_TAGS`, `DD_ENV`, `DD_VERSION` → merged into `ddtags`
+
+Notes:
+- `DD_TAGS` may be comma or space-separated. Example: `DD_TAGS="team:payments region:us-east-1"` or `DD_TAGS=a:1,b:2`
+- `DD_ENV` and `DD_VERSION` are appended as `env:<value>` and `version:<value>` respectively
+- An event-level `host` property still overrides the top-level host for that event
+
+Example usage without explicitly passing arguments:
+
+```bash
+export DD_SERVICE="checkout-svc"
+export DD_ENV="prod"
+export DD_VERSION="1.2.3"
+export DD_TAGS="team:payments,region:us-east-1"
+export DD_HOST="web-01"
+```
+
+```csharp
+using (var log = new LoggerConfiguration()
+    // No source/service/host/tags passed; values come from DD_ env vars above
+    .WriteTo.DatadogLogs("<API_KEY>")
+    .CreateLogger())
+{
+    log.Information("Started");
+}
+```
+
 ## Using a custom log formatter
 You can implement a [custom `ITextFormatter` ](https://github.com/serilog/serilog/blob/dev/src/Serilog/Formatting/ITextFormatter.cs)and pass it to the sink to change the format of your logs. This is useful if you want to add/remove/modify fields from the final JSON payload, or emit non-json logs to Datadog. 
 
