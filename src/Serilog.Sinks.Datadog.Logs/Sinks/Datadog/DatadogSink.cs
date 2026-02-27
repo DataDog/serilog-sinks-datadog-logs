@@ -149,14 +149,17 @@ namespace Serilog.Sinks.Datadog.Logs
             }
             else
             {
-                // When proxy is configured, use an HttpClientHandler so all HTTP intake requests go through it.
-                // Proxy (IWebProxy) takes precedence and ProxyUrl is converted to WebProxy when Proxy is not set.
                 HttpMessageHandler handler = null;
+#if NETSTANDARD2_0 || NET45 || NET461 || NET472 || NET5_0
+                // When proxy is configured, use an HttpClientHandler so all HTTP intake requests go through it.
+                // Proxy (IWebProxy) takes precedence; ProxyUrl is converted to WebProxy when Proxy is not set.
+                // netstandard1.3 does not have WebProxy/HttpClientHandler.Proxy; use custom client for proxy on that target.
                 var proxy = configuration.Proxy ?? (string.IsNullOrWhiteSpace(configuration.ProxyUrl) ? null : new WebProxy(configuration.ProxyUrl));
                 if (proxy != null)
                 {
                     handler = new HttpClientHandler { Proxy = proxy };
                 }
+#endif
                 var httpIntakeClient = new DatadogHttpIntakeClient(apiKey, handler);
                 return new DatadogHttpClient($"{configuration.Url}/api/v2/logs", renderer, httpIntakeClient, configuration.MaxRetries);
             }
