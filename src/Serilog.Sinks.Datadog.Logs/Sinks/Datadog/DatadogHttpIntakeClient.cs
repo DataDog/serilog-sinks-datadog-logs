@@ -1,4 +1,4 @@
-﻿// Unless explicitly stated otherwise all files in this repository are licensed
+// Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
@@ -10,6 +10,13 @@ namespace Serilog.Sinks.Datadog.Logs
     internal class DatadogHttpIntakeClient : HttpClient
     {
         public DatadogHttpIntakeClient(string apiKey)
+            : this(apiKey, null)
+        {
+        }
+
+        /// <param name="handler">Optional. When provided (e.g. HttpClientHandler with Proxy set), all requests use it. When null, default handler is used.</param>
+        public DatadogHttpIntakeClient(string apiKey, HttpMessageHandler handler)
+            : base(handler ?? new HttpClientHandler(), disposeHandler: true)
         {
             DefaultRequestHeaders.Add("DD-API-KEY", apiKey);
             DefaultRequestHeaders.Add("DD-EVP-ORIGIN", "Serilog.Sinks.Datadog.Logs");

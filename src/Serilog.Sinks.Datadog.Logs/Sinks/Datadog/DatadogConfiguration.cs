@@ -1,7 +1,9 @@
-﻿// Unless explicitly stated otherwise all files in this repository are licensed
+// Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
+
+using System.Net;
 
 namespace Serilog.Sinks.Datadog.Logs
 {
@@ -55,10 +57,22 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public int MaxRetries { get; set; }
 
+        /// <summary>
+        /// Proxy to use for HTTP log submission. When set, all HTTP requests to the Datadog intake go through this proxy.
+        /// Compatible with Datadog agent proxy configuration (e.g. https://docs.datadoghq.com/agent/proxy/).
+        /// </summary>
+        public IWebProxy Proxy { get; set; }
+
+        /// <summary>
+        /// Proxy URL for HTTP log submission (e.g. "http://proxy.example.com:8080").
+        /// When set, a <see cref="WebProxy"/> is used for requests. Ignored if <see cref="Proxy"/> is set.
+        /// </summary>
+        public string ProxyUrl { get; set; }
+
         public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {
         }
 
-        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false, int maxRetries = 10, bool resolveHostIfMissing = false)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false, int maxRetries = 10, bool resolveHostIfMissing = false, IWebProxy proxy = null, string proxyUrl = null)
         {
             Url = url;
             Port = port;
@@ -66,6 +80,8 @@ namespace Serilog.Sinks.Datadog.Logs
             UseTCP = useTCP;
             MaxRetries = maxRetries;
             ResolveHostIfMissing = resolveHostIfMissing;
+            Proxy = proxy;
+            ProxyUrl = proxyUrl;
         }
 
         public override string ToString() => $"{{ Url: {Url}, Port: {Port}, UseSSL: {UseSSL}, UseTCP: {UseTCP} }}";

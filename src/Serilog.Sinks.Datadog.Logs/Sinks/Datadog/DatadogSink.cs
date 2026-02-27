@@ -1,4 +1,4 @@
-﻿// Unless explicitly stated otherwise all files in this repository are licensed
+// Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
@@ -7,6 +7,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Serilog.Core;
@@ -147,7 +149,15 @@ namespace Serilog.Sinks.Datadog.Logs
             }
             else
             {
-                var httpIntakeClient = new DatadogHttpIntakeClient(apiKey);
+                // When proxy is configured, use an HttpClientHandler so all HTTP intake requests go through it.
+                // Proxy (IWebProxy) takes precedence and ProxyUrl is converted to WebProxy when Proxy is not set.
+                HttpMessageHandler handler = null;
+                var proxy = configuration.Proxy ?? (string.IsNullOrWhiteSpace(configuration.ProxyUrl) ? null : new WebProxy(configuration.ProxyUrl));
+                if (proxy != null)
+                {
+                    handler = new HttpClientHandler { Proxy = proxy };
+                }
+                var httpIntakeClient = new DatadogHttpIntakeClient(apiKey, handler);
                 return new DatadogHttpClient($"{configuration.Url}/api/v2/logs", renderer, httpIntakeClient, configuration.MaxRetries);
             }
         }
