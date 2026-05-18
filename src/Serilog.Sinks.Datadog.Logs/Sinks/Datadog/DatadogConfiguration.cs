@@ -16,6 +16,13 @@ namespace Serilog.Sinks.Datadog.Logs
         public bool ResolveHostIfMissing { get; set; }
 
         /// <summary>
+        /// The default Datadog logs-backend URL (HTTP intake on the default site).
+        /// Retained so the historical default for callers using <see cref="DatadogConfiguration()"/>
+        /// without specifying a URL is preserved (master behavior).
+        /// </summary>
+        public const string DDUrl = "https://http-intake.logs.datadoghq.com";
+
+        /// <summary>
         /// The default Datadog site.
         /// </summary>
         public const string DefaultSite = "datadoghq.com";
@@ -38,8 +45,9 @@ namespace Serilog.Sinks.Datadog.Logs
         public string Site { get; set; }
 
         /// <summary>
-        /// URL of the server to send log events to. When unset (null), the effective URL is
-        /// derived from <see cref="Site"/>. An explicit value here always wins over <see cref="Site"/>.
+        /// URL of the server to send log events to. Defaults to <see cref="DDUrl"/> for backward
+        /// compatibility. If <see cref="Site"/> is set, it takes precedence over the default URL.
+        /// To use a fully custom URL (e.g. a proxy), set this and leave <see cref="Site"/> unset.
         /// </summary>
         public string Url { get; set; }
 
@@ -63,10 +71,10 @@ namespace Serilog.Sinks.Datadog.Logs
         /// </summary>
         public int MaxRetries { get; set; }
 
-        public DatadogConfiguration() : this(null, DDPort, true, false) {
+        public DatadogConfiguration() : this(DDUrl, DDPort, true, false) {
         }
 
-        public DatadogConfiguration(string url = null, int port = DDPort, bool useSSL = true, bool useTCP = false, int maxRetries = 10, bool resolveHostIfMissing = false, string site = null)
+        public DatadogConfiguration(string url = DDUrl, int port = DDPort, bool useSSL = true, bool useTCP = false, int maxRetries = 10, bool resolveHostIfMissing = false, string site = null)
         {
             Url = url;
             Port = port;
@@ -83,15 +91,18 @@ namespace Serilog.Sinks.Datadog.Logs
         internal string EffectiveSite => string.IsNullOrWhiteSpace(Site) ? DefaultSite : Site;
 
         /// <summary>
-        /// Resolve the URL to use for the HTTP intake. An explicit <see cref="Url"/> wins;
-        /// otherwise derives <c>https://http-intake.logs.{site}</c> from <see cref="EffectiveSite"/>.
+        /// Resolve the URL to use for the HTTP intake. A custom <see cref="Url"/> (anything other
+        /// than the historical <see cref="DDUrl"/> default) always wins. Otherwise, if
+        /// <see cref="Site"/> is set, derive <c>https://http-intake.logs.{site}</c>. Falls back to
+        /// <see cref="Url"/> (which is <see cref="DDUrl"/> by default) when neither is set.
         /// </summary>
         internal string EffectiveHttpUrl
         {
             get
             {
-                if (!string.IsNullOrWhiteSpace(Url)) return Url;
-                return $"https://http-intake.logs.{EffectiveSite}";
+                if (!string.IsNullOrWhiteSpace(Url) && Url != DDUrl) return Url;
+                if (!string.IsNullOrWhiteSpace(Site)) return $"https://http-intake.logs.{Site}";
+                return Url;
             }
         }
 
