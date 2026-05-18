@@ -3,11 +3,10 @@
 ## Unreleased
 
 * Add `site` configuration parameter to `.WriteTo.DatadogLogs(...)` and a corresponding
-  `Site` property on `DatadogConfiguration`. The site is used to derive the intake
-  hostname (HTTP: `http-intake.logs.{site}`, TCP: `intake.logs.{site}`). Defaults to
-  `datadoghq.com`. Valid values include `datadoghq.com`, `datadoghq.eu`,
-  `us3.datadoghq.com`, `us5.datadoghq.com`, `ap1.datadoghq.com`, `ddog-gov.com`. An
-  explicit `url` continues to take precedence.
+  `Site` property on `DatadogConfiguration`. The site is used to derive the HTTP intake
+  URL (`https://http-intake.logs.{site}`). Defaults to `datadoghq.com`. Valid values
+  include `datadoghq.com`, `datadoghq.eu`, `us3.datadoghq.com`, `us5.datadoghq.com`,
+  `ap1.datadoghq.com`, `ddog-gov.com`. An explicit `url` continues to take precedence.
 
 ## 0.6.1
 

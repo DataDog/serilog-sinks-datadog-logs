@@ -19,24 +19,10 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
         }
 
         [Test]
-        public void DefaultSite_TcpHostIsUsIntake()
-        {
-            var config = new DatadogConfiguration();
-            Assert.AreEqual("intake.logs.datadoghq.com", config.EffectiveTcpHost);
-        }
-
-        [Test]
         public void EuSite_HttpUrlPointsToEuIntake()
         {
             var config = new DatadogConfiguration(site: "datadoghq.eu");
             Assert.AreEqual("https://http-intake.logs.datadoghq.eu", config.EffectiveHttpUrl);
-        }
-
-        [Test]
-        public void EuSite_TcpHostPointsToEuIntake()
-        {
-            var config = new DatadogConfiguration(site: "datadoghq.eu", useTCP: true);
-            Assert.AreEqual("intake.logs.datadoghq.eu", config.EffectiveTcpHost);
         }
 
         [Test]
@@ -74,16 +60,6 @@ namespace Serilog.Sinks.Datadog.Logs.Tests
                 url: "https://my.custom.intake.example.com",
                 site: "datadoghq.eu");
             Assert.AreEqual("https://my.custom.intake.example.com", config.EffectiveHttpUrl);
-        }
-
-        [Test]
-        public void ExplicitUrl_WinsOverSiteForTcp()
-        {
-            var config = new DatadogConfiguration(
-                url: "intake.logs.datadoghq.com",
-                useTCP: true,
-                site: "datadoghq.eu");
-            Assert.AreEqual("intake.logs.datadoghq.com", config.EffectiveTcpHost);
         }
 
         [Test]

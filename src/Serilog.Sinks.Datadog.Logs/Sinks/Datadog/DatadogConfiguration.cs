@@ -21,11 +21,6 @@ namespace Serilog.Sinks.Datadog.Logs
         public const string DefaultSite = "datadoghq.com";
 
         /// <summary>
-        /// The Datadog logs-backend URL (US site).
-        /// </summary>
-        public const string DDUrl = "https://http-intake.logs.datadoghq.com";
-
-        /// <summary>
         /// The Datadog logs-backend TCP SSL port.
         /// </summary>
         public const int DDPort = 10516;
@@ -38,7 +33,7 @@ namespace Serilog.Sinks.Datadog.Logs
         /// <summary>
         /// Datadog site (e.g. "datadoghq.com", "datadoghq.eu", "us3.datadoghq.com",
         /// "us5.datadoghq.com", "ap1.datadoghq.com", "ddog-gov.com"). Used to derive the
-        /// HTTP/TCP intake hostname when an explicit Url is not provided.
+        /// HTTP intake URL when an explicit Url is not provided.
         /// </summary>
         public string Site { get; set; }
 
@@ -97,20 +92,6 @@ namespace Serilog.Sinks.Datadog.Logs
             {
                 if (!string.IsNullOrWhiteSpace(Url)) return Url;
                 return $"https://http-intake.logs.{EffectiveSite}";
-            }
-        }
-
-        /// <summary>
-        /// Resolve the hostname to use for the TCP intake. An explicit <see cref="Url"/> wins
-        /// (treated as a hostname); otherwise derives <c>intake.logs.{site}</c> from
-        /// <see cref="EffectiveSite"/>.
-        /// </summary>
-        internal string EffectiveTcpHost
-        {
-            get
-            {
-                if (!string.IsNullOrWhiteSpace(Url)) return Url;
-                return $"intake.logs.{EffectiveSite}";
             }
         }
 

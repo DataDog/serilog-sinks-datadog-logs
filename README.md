@@ -32,10 +32,7 @@ using (var log = new LoggerConfiguration()
 
 Valid `site` values: `datadoghq.com` (default), `datadoghq.eu`, `us3.datadoghq.com`,
 `us5.datadoghq.com`, `ap1.datadoghq.com`, `ddog-gov.com`. The site is used to derive the
-intake hostname:
-
-- HTTP intake: `http-intake.logs.{site}` on port 443 (TLS).
-- TCP intake: `intake.logs.{site}` on port 10516 (TLS) or 10514 (plain).
+HTTP intake URL: `https://http-intake.logs.{site}` on port 443 (TLS).
 
 An explicit `url` on the `DatadogConfiguration` always wins over `site`.
 
