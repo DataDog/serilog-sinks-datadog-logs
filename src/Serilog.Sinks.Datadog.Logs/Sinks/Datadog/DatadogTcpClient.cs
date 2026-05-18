@@ -66,14 +66,15 @@ namespace Serilog.Sinks.Datadog.Logs
         private async Task ConnectAsync()
         {
             _client = new TcpClient();
-            await _client.ConnectAsync(_config.Url, _config.Port);
+            var host = _config.EffectiveTcpHost;
+            await _client.ConnectAsync(host, _config.Port);
             _connectionMatcher = ConnectionMatcher.TryCreate(_client.Client.LocalEndPoint, _client.Client.RemoteEndPoint);
 
             Stream rawStream = _client.GetStream();
             if (_config.UseSSL)
             {
                 SslStream secureStream = new SslStream(rawStream);
-                await secureStream.AuthenticateAsClientAsync(_config.Url);
+                await secureStream.AuthenticateAsClientAsync(host);
                 _stream = secureStream;
             }
             else

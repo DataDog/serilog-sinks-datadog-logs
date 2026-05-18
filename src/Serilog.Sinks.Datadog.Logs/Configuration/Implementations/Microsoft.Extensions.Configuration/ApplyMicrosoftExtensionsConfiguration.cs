@@ -31,7 +31,8 @@ namespace Serilog.Sinks.Datadog.Logs
                 useSSL: datadogConfiguration?.UseSSL ?? section.UseSSL,
                 useTCP: datadogConfiguration?.UseTCP ?? section.UseTCP,
                 maxRetries:datadogConfiguration?.MaxRetries ?? section.MaxRetries,
-                resolveHostIfMissing: datadogConfiguration?.ResolveHostIfMissing ?? section.ResolveHostIfMissing
+                resolveHostIfMissing: datadogConfiguration?.ResolveHostIfMissing ?? section.ResolveHostIfMissing,
+                site: datadogConfiguration?.Site ?? section.Site
             );
 
             return result;
