@@ -165,7 +165,11 @@ using (var log = new LoggerConfiguration()
 }
 ```
 
-## Using a custom log formatter
+## Sending logs through an HTTP proxy
+
+If your environment requires outbound HTTPS traffic to go through an HTTP proxy, see [`docs/proxy.md`](docs/proxy.md) for a worked example (including authenticated proxies and current limitations).
+
+
 You can implement a [custom `ITextFormatter` ](https://github.com/serilog/serilog/blob/dev/src/Serilog/Formatting/ITextFormatter.cs)and pass it to the sink to change the format of your logs. This is useful if you want to add/remove/modify fields from the final JSON payload, or emit non-json logs to Datadog. 
 
 There are several options for implementing custom formatters. The easiest way is to use [Serilog-expressions](https://github.com/serilog/serilog-expressions). Below is an example of a Serilog-expression `ITextFormatter` that drops the `MessageTemplate` field: 
