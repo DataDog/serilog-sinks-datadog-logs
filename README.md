@@ -16,8 +16,25 @@ using (var log = new LoggerConfiguration()
 }
 ```
 
-By default the logs are forwarded to Datadog via **HTTPS** on port 443 to the US site.
-You can change the site to EU by using the `url` property and set it to `https://http-intake.logs.datadoghq.eu`.
+By default the logs are forwarded to Datadog via **HTTPS** on port 443 to the US site
+(`datadoghq.com`).
+
+To send logs to another Datadog site, use the `site` parameter:
+
+```csharp
+using (var log = new LoggerConfiguration()
+    .WriteTo.DatadogLogs("<API_KEY>", site: "datadoghq.eu")
+    .CreateLogger())
+{
+    // Some code
+}
+```
+
+Valid `site` values: `datadoghq.com` (default), `datadoghq.eu`, `us3.datadoghq.com`,
+`us5.datadoghq.com`, `ap1.datadoghq.com`, `ddog-gov.com`. The site is used to derive the
+HTTP intake URL: `https://http-intake.logs.{site}` on port 443 (TLS).
+
+An explicit `url` on the `DatadogConfiguration` always wins over `site`.
 
 You can override the default behavior and use **TCP** forwarding by manually specifing the following properties (url, port, useSSL, useTCP).
 
@@ -211,6 +228,7 @@ If you cannot use Serilog-expressions due to framework compatibility - you can i
 | `detectTCPDisconnection`   | `bool`                 | Detect when the TCP connection is lost and recreate a new connection.                                                        |
 | `formatter`                | `ITextFormatter`       | A custom formatter implementation to change the format of the logs                                                           |
 | `maxMessageSize`           | `int`                  | The maximum size in bytes of a message before it is split into chunks                                                        |
+| `site`                     | `string`               | The Datadog site (e.g. `datadoghq.com`, `datadoghq.eu`, `us3.datadoghq.com`, `us5.datadoghq.com`, `ap1.datadoghq.com`, `ddog-gov.com`). Used to derive the intake hostname when an explicit `url` is not set. Defaults to `datadoghq.com`. |
 
 **NOTE:** if `maxMessageSize` [exceeds the documented API limit of 1MB](https://docs.datadoghq.com/api/latest/logs/) - any payloads larger than 1MB will be dropped by the intake. 
 

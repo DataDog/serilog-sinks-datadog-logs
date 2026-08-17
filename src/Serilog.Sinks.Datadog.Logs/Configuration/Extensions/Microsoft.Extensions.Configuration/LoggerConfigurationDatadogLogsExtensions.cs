@@ -44,6 +44,10 @@ namespace Serilog
         /// <param name="formatter">A formatter implementation to change the format of the logs.</param>
         /// <param name="maxMessageSize">The maximum size in bytes of a message before it is split into chunks</param>
         /// <param name="jsonValueFormatter">Optional override of the default Serilog JsonValueFormatter.</param>
+        /// <param name="site">The Datadog site (e.g. "datadoghq.com", "datadoghq.eu"). Used to derive
+        /// the intake hostname when an explicit url/host is not provided on <paramref name="configuration"/>.
+        /// Defaults to "datadoghq.com". An explicit value on <paramref name="configuration"/>.Site
+        /// takes precedence over this argument.</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
@@ -65,7 +69,8 @@ namespace Serilog
             IDatadogClient client = null,
             ITextFormatter formatter = null,
             int? maxMessageSize = null,
-            JsonValueFormatter jsonValueFormatter = null)
+            JsonValueFormatter jsonValueFormatter = null,
+            string site = null)
         {
             if (loggerConfiguration == null)
             {
@@ -77,6 +82,10 @@ namespace Serilog
             }
 
             var config = ApplyMicrosoftExtensionsConfiguration.ConfigureDatadogConfiguration(configuration, configurationSection);
+            if (!string.IsNullOrWhiteSpace(site) && string.IsNullOrWhiteSpace(config.Site))
+            {
+                config.Site = site;
+            }
             var sink = DatadogSink.Create(apiKey, source, service, host, tags, config, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, client, formatter, maxMessageSize, jsonValueFormatter);
 
             // Use restrictedToMinimumLevel if set, otherwise use logLevel

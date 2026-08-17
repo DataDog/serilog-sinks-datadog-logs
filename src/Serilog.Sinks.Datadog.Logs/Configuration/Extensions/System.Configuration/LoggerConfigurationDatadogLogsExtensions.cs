@@ -38,6 +38,10 @@ namespace Serilog
         /// <param name="detectTCPDisconnection">Detect when the TCP connection is lost and recreate a new connection.</param>
         /// <param name="formatter">A formatter implementation to change the format of the logs.</param>
         /// <param name="maxMessageSize">The maximum size in bytes of a message before it is split into chunks</param>
+        /// <param name="site">The Datadog site (e.g. "datadoghq.com", "datadoghq.eu"). Used to derive
+        /// the intake hostname when an explicit url/host is not provided on <paramref name="configuration"/>.
+        /// Defaults to "datadoghq.com". An explicit value on <paramref name="configuration"/>.Site
+        /// takes precedence over this argument.</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
@@ -55,7 +59,8 @@ namespace Serilog
             Action<Exception> exceptionHandler = null,
             bool detectTCPDisconnection = false,
             ITextFormatter formatter = null,
-            int? maxMessageSize = null)
+            int? maxMessageSize = null,
+            string site = null)
         {
             if (loggerConfiguration == null)
             {
@@ -67,6 +72,10 @@ namespace Serilog
             }
 
             configuration = (configuration != null) ? configuration : new DatadogConfiguration();
+            if (!string.IsNullOrWhiteSpace(site) && string.IsNullOrWhiteSpace(configuration.Site))
+            {
+                configuration.Site = site;
+            }
             var sink = DatadogSink.Create(apiKey, source, service, host, tags, configuration, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, null, formatter, maxMessageSize);
 
             return loggerConfiguration.Sink(sink, logLevel);

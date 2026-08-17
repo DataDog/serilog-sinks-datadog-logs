@@ -148,7 +148,7 @@ namespace Serilog.Sinks.Datadog.Logs
             else
             {
                 var httpIntakeClient = new DatadogHttpIntakeClient(apiKey);
-                return new DatadogHttpClient($"{configuration.Url}/api/v2/logs", renderer, httpIntakeClient, configuration.MaxRetries);
+                return new DatadogHttpClient($"{configuration.EffectiveHttpUrl}/api/v2/logs", renderer, httpIntakeClient, configuration.MaxRetries);
             }
         }
 
