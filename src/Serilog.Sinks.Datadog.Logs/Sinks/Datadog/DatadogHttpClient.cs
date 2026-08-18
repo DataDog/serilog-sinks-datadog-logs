@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -74,7 +75,8 @@ namespace Serilog.Sinks.Datadog.Logs
         private async Task Post(JsonPayloadBuilder payloadBuilder)
         {
             var payload = payloadBuilder.Build();
-            HttpResponseMessage lastResult = null;
+            HttpStatusCode? lastErrorCode = null;
+            string? lastErrorReason = null;
             Exception lastException = null;
             for (int retry = 0; retry < _maxRetries; retry++)
             {
@@ -88,8 +90,9 @@ namespace Serilog.Sinks.Datadog.Logs
                 {
                     // Certain older versions of .NET Core will automatically dispose of the Content object before PostAsync returns.
                     // To guarantee portability, recreate the StringContent every retry.
-                    var result = await _client.PostAsync(_url, new StringContent(payload, Encoding.UTF8, _content));
-                    lastResult = result;
+                    using var result = await _client.PostAsync(_url, new StringContent(payload, Encoding.UTF8, _content));
+                    lastErrorCode = result.StatusCode;
+                    lastErrorReason = result.ReasonPhrase;
 
                     if (result == null) { continue; }
                     if ((int)result.StatusCode >= 500) { continue; }
@@ -106,7 +109,7 @@ namespace Serilog.Sinks.Datadog.Logs
 
             if (lastException is null)
             {
-                throw new CannotSendLogEventException(payload, payloadBuilder.LogEvents, lastResult);
+                throw new CannotSendLogEventException(payload, payloadBuilder.LogEvents, lastErrorCode, lastErrorReason);
             }
             else
             {
