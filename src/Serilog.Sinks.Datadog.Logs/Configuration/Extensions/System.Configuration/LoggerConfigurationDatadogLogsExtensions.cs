@@ -1,10 +1,11 @@
 ﻿// Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
-// Copyright 2019 Datadog, Inc.
+// Copyright 2026 Datadog, Inc.
 
 using System;
 using Serilog.Configuration;
+using Serilog.Core;
 using Serilog.Events;
 using Serilog.Sinks.Datadog.Logs;
 using Serilog.Formatting;
@@ -38,6 +39,7 @@ namespace Serilog
         /// <param name="detectTCPDisconnection">Detect when the TCP connection is lost and recreate a new connection.</param>
         /// <param name="formatter">A formatter implementation to change the format of the logs.</param>
         /// <param name="maxMessageSize">The maximum size in bytes of a message before it is split into chunks</param>
+        /// <param name="levelSwitch">Optional level switch to control this sink's minimum level at runtime.</param>
         /// <returns>Logger configuration</returns>
         /// <exception cref="ArgumentNullException">A required parameter is null.</exception>
         public static LoggerConfiguration DatadogLogs(
@@ -55,7 +57,8 @@ namespace Serilog
             Action<Exception> exceptionHandler = null,
             bool detectTCPDisconnection = false,
             ITextFormatter formatter = null,
-            int? maxMessageSize = null)
+            int? maxMessageSize = null,
+            LoggingLevelSwitch levelSwitch = null)
         {
             if (loggerConfiguration == null)
             {
@@ -69,7 +72,7 @@ namespace Serilog
             configuration = (configuration != null) ? configuration : new DatadogConfiguration();
             var sink = DatadogSink.Create(apiKey, source, service, host, tags, configuration, batchSizeLimit, batchPeriod, queueLimit, exceptionHandler, detectTCPDisconnection, null, formatter, maxMessageSize);
 
-            return loggerConfiguration.Sink(sink, logLevel);
+            return loggerConfiguration.Sink(sink, logLevel, levelSwitch);
         }
     }
 }
