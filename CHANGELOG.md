@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.2
+
+* Add proxy support for HTTP log submission. Set `DatadogConfiguration.Proxy` (IWebProxy) or `DatadogConfiguration.ProxyUrl` (string) so logs are sent through an HTTP proxy, e.g. to align with [Datadog agent proxy configuration](https://docs.datadoghq.com/agent/proxy/). Resolves [#62](https://github.com/DataDog/serilog-sinks-datadog-logs/issues/62).
+
 ## 0.6.1
 
 * Add `DatadogConfiguration.ResolveHostIfMissing` (and env `DD_LOGS_SINK_RESOLVE_HOST`) to provide a default `host` value when the sink `Host` option is unset. Uses `Environment.MachineName` if available, will fallback to `COMPUTERNAME`/`HOSTNAME` on `netstandard1.x`

@@ -1,4 +1,4 @@
-﻿// Unless explicitly stated otherwise all files in this repository are licensed
+// Unless explicitly stated otherwise all files in this repository are licensed
 // under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/).
 // Copyright 2019 Datadog, Inc.
@@ -25,13 +25,16 @@ namespace Serilog.Sinks.Datadog.Logs
 
             var section = configurationSection.Get<DatadogConfiguration>();
 
+            // Proxy is code-only (IWebProxy cannot be bound from config); proxyUrl can come from config section.
             var result = new DatadogConfiguration(
                 url: datadogConfiguration?.Url ?? section.Url,
                 port: datadogConfiguration?.Port ?? section.Port,
                 useSSL: datadogConfiguration?.UseSSL ?? section.UseSSL,
                 useTCP: datadogConfiguration?.UseTCP ?? section.UseTCP,
-                maxRetries:datadogConfiguration?.MaxRetries ?? section.MaxRetries,
-                resolveHostIfMissing: datadogConfiguration?.ResolveHostIfMissing ?? section.ResolveHostIfMissing
+                maxRetries: datadogConfiguration?.MaxRetries ?? section.MaxRetries,
+                resolveHostIfMissing: datadogConfiguration?.ResolveHostIfMissing ?? section.ResolveHostIfMissing,
+                proxy: datadogConfiguration?.Proxy,
+                proxyUrl: datadogConfiguration?.ProxyUrl ?? section.ProxyUrl
             );
 
             return result;

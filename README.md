@@ -21,6 +21,25 @@ You can change the site to EU by using the `url` property and set it to `https:/
 
 You can override the default behavior and use **TCP** forwarding by manually specifing the following properties (url, port, useSSL, useTCP).
 
+To send logs through an HTTP proxy (e.g. to align with [Datadog agent proxy configuration](https://docs.datadoghq.com/agent/proxy/)), set `configuration.Proxy` or `configuration.ProxyUrl`:
+
+```csharp
+// Option 1: Proxy URL string (works with appsettings.json)
+var config = new DatadogConfiguration(proxyUrl: "http://proxy.example.com:8080");
+// Option 2: IWebProxy for full control (credentials, bypass list)
+var config = new DatadogConfiguration();
+config.Proxy = new WebProxy("http://proxy.example.com:8080") { UseDefaultCredentials = false };
+
+using (var log = new LoggerConfiguration()
+    .WriteTo.DatadogLogs("<API_KEY>", configuration: config)
+    .CreateLogger())
+{
+    log.Information("Logs sent via proxy");
+}
+```
+
+**Note:** A third-party package [Serilog.Sinks.Datadog.Logs.WithProxy](https://www.nuget.org/packages/Serilog.Sinks.Datadog.Logs.WithProxy) also adds proxy support (e.g. for older sink versions). Prefer the built-in `Proxy` / `ProxyUrl` above when using a recent release of this sink.
+
 You can also add the following properties (source, service, host, tags) to the Serilog sink.
 
 * Example with a TCP forwarder which add the source, service, host and a list of tags to the logs:
@@ -117,7 +136,8 @@ In the `"Serilog.WriteTo"` array, add an entry for `DatadogLogs`. An example is 
           "url": "intake.logs.datadoghq.com", 
           "port": 10516, 
           "useSSL": true, 
-          "useTCP": true
+          "useTCP": true,
+          "proxyUrl": "http://proxy.example.com:8080"
         }
       }
     }
@@ -201,7 +221,7 @@ If you cannot use Serilog-expressions due to framework compatibility - you can i
 | `service`                  | `string`               | The service name.                                                                                                            |
 | `host`                     | `string`               | The host name.                                                                                                               |
 | `tags`                     | `string[]`             | Custom tags.                                                                                                                 |
-| `configuration`            | `DatadogConfiguration` | The Datadog logs client configuration.                                                                                       |
+| `configuration`            | `DatadogConfiguration` | The Datadog logs client configuration. Use `configuration.Proxy` or `configuration.ProxyUrl` to send logs via an HTTP proxy (see [Datadog agent proxy](https://docs.datadoghq.com/agent/proxy/)). |
 | `restrictedToMinimumLevel` | `LogEventLevel`        | The minimum log level for the sink. Takes precedence over `logLevel` when both are set.                                      |
 | `logLevel`                 | `LogEventLevel`        | Legacy parameter to set the minimum log level for the sink. Used only if `restrictedToMinimumLevel` is not set.              |
 | `batchSizeLimit`           | `int`                  | The maximum number of events to emit in a single batch.                                                                      |
